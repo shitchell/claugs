@@ -91,8 +91,7 @@ class ToolResultGenericItem(TypedDict, total=False):
 
 # Tool result content can be a string or a list of text/image/other items
 ToolResultContentValue = (
-    str
-    | list[ToolResultTextItem | ToolResultImageItem | ToolResultGenericItem]
+    str | list[ToolResultTextItem | ToolResultImageItem | ToolResultGenericItem]
 )
 
 
@@ -304,9 +303,7 @@ class ToolResultContent(ContentBlock):
                 # Handle unknown content types (e.g., tool_reference)
                 item_type = item.get("type", "unknown")
                 # Include any descriptive fields
-                details = {
-                    k: v for k, v in item.items() if k != "type" and v
-                }
+                details = {k: v for k, v in item.items() if k != "type" and v}
                 detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
                 label = f"[{item_type}"
                 if detail_str:
