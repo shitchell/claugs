@@ -83,8 +83,17 @@ class ToolResultImageItem(TypedDict):
     source: dict[str, Any]
 
 
-# Tool result content can be a string or a list of text/image items
-ToolResultContentValue = str | list[ToolResultTextItem | ToolResultImageItem]
+class ToolResultGenericItem(TypedDict, total=False):
+    """Generic item within tool result content (e.g., tool_reference)."""
+
+    type: str
+
+
+# Tool result content can be a string or a list of text/image/other items
+ToolResultContentValue = (
+    str
+    | list[ToolResultTextItem | ToolResultImageItem | ToolResultGenericItem]
+)
 
 
 class ToolResultContentItem(TypedDict, total=False):
@@ -291,6 +300,19 @@ class ToolResultContent(ContentBlock):
             elif item.get("type") == "image":
                 media_type = item.get("source", {}).get("media_type", "unknown")
                 parts.append(f"[Image: {media_type}]")
+            else:
+                # Handle unknown content types (e.g., tool_reference)
+                item_type = item.get("type", "unknown")
+                # Include any descriptive fields
+                details = {
+                    k: v for k, v in item.items() if k != "type" and v
+                }
+                detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+                label = f"[{item_type}"
+                if detail_str:
+                    label += f": {detail_str}"
+                label += "]"
+                parts.append(label)
         return "\n".join(parts)
 
 
