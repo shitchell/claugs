@@ -83,6 +83,20 @@ class TestParseDatetimeRelative:
         assert result == base + timedelta(days=5)
 
     @patch("claude_stream.dateparse._now")
+    def test_30_minutes_ago(self, mock_now):
+        base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
+        mock_now.return_value = base
+        result = parse_datetime("30 minutes ago")
+        assert result == base - timedelta(minutes=30)
+
+    @patch("claude_stream.dateparse._now")
+    def test_2_hours_ago(self, mock_now):
+        base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
+        mock_now.return_value = base
+        result = parse_datetime("2 hours ago")
+        assert result == base - timedelta(hours=2)
+
+    @patch("claude_stream.dateparse._now")
     def test_minus_1w(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base

@@ -40,6 +40,25 @@ _RELATIVE_RE = re.compile(
     # Note: NO re.IGNORECASE — "m" (minutes) vs "M" (months) is intentional
 )
 
+# Regex for "N units ago" syntax: "30 minutes ago", "2 hours ago"
+_AGO_RE = re.compile(
+    r"^(\d+)\s+"
+    r"(seconds?|minutes?|hours?|days?|weeks?|months?|years?)"
+    r"\s+ago$",
+    re.IGNORECASE,
+)
+
+# Map lowercase unit names to seconds (for "ago" syntax)
+_AGO_UNIT_SECONDS: dict[str, int] = {
+    "second": 1, "seconds": 1,
+    "minute": 60, "minutes": 60,
+    "hour": 3600, "hours": 3600,
+    "day": 86400, "days": 86400,
+    "week": 604800, "weeks": 604800,
+    "month": 2629743, "months": 2629743,
+    "year": 31556926, "years": 31556926,
+}
+
 # Map unit strings to seconds
 _UNIT_SECONDS: dict[str, int] = {}
 for _names, _secs in [
@@ -69,7 +88,7 @@ def parse_datetime(text: str) -> datetime:
     - ISO dates: 2026-03-17, 2026-03-17T14:23:05, 2026-03-17T14:23:05Z
     - Natural language: March 17 2026, Monday at 5pm (via dateutil)
     - Keywords: noon, midnight, today, tomorrow
-    - Relative times: now -2h, +30m, 5d, now +1w
+    - Relative times: now -2h, +30m, 5d, now +1w, 30 minutes ago
 
     Returns:
         A timezone-aware datetime in UTC.
@@ -88,6 +107,13 @@ def parse_datetime(text: str) -> datetime:
         sign = -1 if sign_str == "-" else 1
         seconds = int(num_str) * _UNIT_SECONDS.get(unit, 1)
         return _now() + timedelta(seconds=sign * seconds)
+
+    # Check for "N units ago" pattern
+    ago_match = _AGO_RE.match(text)
+    if ago_match:
+        num_str, unit = ago_match.groups()
+        seconds = int(num_str) * _AGO_UNIT_SECONDS.get(unit.lower(), 1)
+        return _now() - timedelta(seconds=seconds)
 
     # Apply keyword substitutions
     processed = text.lower()
