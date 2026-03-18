@@ -197,3 +197,16 @@ def _scout_single_file(
             return None
 
     return offset
+
+
+# =============================================================================
+# Bucket key computation
+# =============================================================================
+
+
+def compute_bucket_key(dt: datetime, time_format: str) -> str:
+    """Compute the bucket key for a datetime using the strftime pattern.
+
+    Converts to local timezone before formatting.
+    """
+    return dt.astimezone().strftime(time_format)
