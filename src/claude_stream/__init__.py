@@ -12,6 +12,15 @@ from __future__ import annotations
 # Date parsing
 from .dateparse import parse_datetime
 
+# Grouping
+from .grouping import (
+    FileHandle,
+    compute_bucket_key,
+    parse_group_by_spec,
+    render_grouped,
+    scout_files,
+)
+
 # Block types and Style enum
 from .blocks import (
     AnyBlock,
@@ -72,6 +81,7 @@ from .models import (
     Message,
     parse_message,
     # Config
+    GroupByConfig,
     RenderConfig,
     # Constants
     TOOL_INPUT_TRUNCATE_LENGTH,
@@ -98,6 +108,12 @@ if WATCHDOG_AVAILABLE:
 __all__ = [
     # Date parsing
     "parse_datetime",
+    # Grouping
+    "FileHandle",
+    "compute_bucket_key",
+    "parse_group_by_spec",
+    "render_grouped",
+    "scout_files",
     # Blocks
     "AnyBlock",
     "CodeBlock",
@@ -148,6 +164,7 @@ __all__ = [
     "SystemStyleMessage",
     "UserMessage",
     # Config and parsing
+    "GroupByConfig",
     "RenderConfig",
     "parse_message",
     # Constants
