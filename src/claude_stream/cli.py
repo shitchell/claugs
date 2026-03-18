@@ -133,11 +133,11 @@ Examples:
     )
 
     # Visibility controls
-    parser.add_argument("--show-thinking", dest="show_thinking", action="store_true", default=True)
+    parser.add_argument("--show-thinking", dest="show_thinking", action="store_true", default=None)
     parser.add_argument("--hide-thinking", dest="show_thinking", action="store_false")
-    parser.add_argument("--show-tool-results", dest="show_tool_results", action="store_true", default=True)
+    parser.add_argument("--show-tool-results", dest="show_tool_results", action="store_true", default=None)
     parser.add_argument("--hide-tool-results", dest="show_tool_results", action="store_false")
-    parser.add_argument("--show-metadata", dest="show_metadata", action="store_true", default=False)
+    parser.add_argument("--show-metadata", dest="show_metadata", action="store_true", default=None)
     parser.add_argument("--hide-metadata", dest="show_metadata", action="store_false")
     parser.add_argument("--line-numbers", action="store_true", help="Show message numbers")
     parser.add_argument("--compact", action="store_true",
@@ -172,15 +172,23 @@ def main() -> int:
     # Build config
     config = RenderConfig()
 
+    # Apply --compact first
     if args.compact:
         config.show_metadata = False
         config.show_thinking = False
         config.show_tool_results = False
         config.show_types = {"assistant", "user"}
 
-    config.show_thinking = args.show_thinking
-    config.show_tool_results = args.show_tool_results
-    config.show_metadata = args.show_metadata
+    # Apply explicit visibility flags (override compact if set)
+    if args.show_thinking is not None:
+        config.show_thinking = args.show_thinking
+    if args.show_tool_results is not None:
+        config.show_tool_results = args.show_tool_results
+    if args.show_metadata is not None:
+        config.show_metadata = args.show_metadata
+
+    # Note: show_line_numbers uses store_true (default=False), not the None pattern,
+    # because it's opt-in only — --compact doesn't affect it.
     config.show_line_numbers = args.line_numbers
 
     if args.show_types:
