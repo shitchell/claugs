@@ -52,9 +52,7 @@ def parse_group_by_spec(spec: str) -> GroupByConfig:
             # CPython on Linux silently passes unknown directives like %Q.
             test_result = datetime.now().strftime(pattern)
             if test_result == pattern:
-                raise ValueError(
-                    f"invalid strftime pattern in group-by: {pattern!r}"
-                )
+                raise ValueError(f"invalid strftime pattern in group-by: {pattern!r}")
             seen_time = True
             time_index = i
             config.time_format = pattern
