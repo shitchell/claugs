@@ -535,9 +535,7 @@ def handle_show(
     # --filepaths-only with stdin is an error
     if args.filepaths_only and not file_path and not session_path:
         if not sys.stdin.isatty():
-            print(
-                "error: --filepaths-only cannot be used with stdin", file=sys.stderr
-            )
+            print("error: --filepaths-only cannot be used with stdin", file=sys.stderr)
             return 1
 
     # Determine what we're working with
@@ -659,18 +657,14 @@ def handle_watch(
         print(f"error: path not found: {args.path}", file=sys.stderr)
         # If we tried to resolve to a Claude path, mention it
         if watch_target != args.path.resolve():
-            print(
-                f"  (looked for Claude project at: {watch_target})", file=sys.stderr
-            )
+            print(f"  (looked for Claude project at: {watch_target})", file=sys.stderr)
         return 1
 
     # Show resolved path if different from input
     if watch_target != args.path.resolve():
         print(f"watching: {watch_target}", file=sys.stderr)
 
-    watch_path(
-        watch_target, config, formatter, recursive=True, tail_lines=args.lines
-    )
+    watch_path(watch_target, config, formatter, recursive=True, tail_lines=args.lines)
     return 0
 
 
