@@ -143,6 +143,15 @@ class CompactMetadata(TypedDict, total=False):
 
 
 @dataclass
+class GroupByConfig:
+    """Parsed --group-by configuration."""
+
+    by_project: bool = False
+    time_format: str | None = None
+    project_first: bool = True
+
+
+@dataclass
 class RenderConfig:
     """Configuration for rendering messages."""
 
@@ -172,6 +181,9 @@ class RenderConfig:
     show_tools: set[str] = field(default_factory=set)
     grep_patterns: list[str] = field(default_factory=list)
     exclude_patterns: list[str] = field(default_factory=list)
+
+    # Grouping
+    group_by: GroupByConfig | None = None
 
 
 # =============================================================================
