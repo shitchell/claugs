@@ -1,4 +1,4 @@
-"""Allow running as `python -m claude_stream`."""
+"""Allow running as `python -m claude_logs`."""
 
 import sys
 

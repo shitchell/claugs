@@ -1,4 +1,4 @@
-"""Command-line interface for claude-stream."""
+"""Command-line interface for claugs."""
 
 from __future__ import annotations
 

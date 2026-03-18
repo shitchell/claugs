@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import patch
 
-from claude_stream.cli import parse_args
+from claude_logs.cli import parse_args
 
 
 class TestTimestampFlags:

@@ -1,4 +1,4 @@
-"""Shared fixtures for claude-stream tests."""
+"""Shared fixtures for claugs tests."""
 
 import json
 import pytest

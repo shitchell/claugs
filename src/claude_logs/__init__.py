@@ -1,5 +1,5 @@
 """
-Parse and prettify Claude Code JSONL stream output.
+Parse and prettify Claude Code JSONL session logs.
 
 Architecture:
 - Pydantic models parse JSON into typed message structures

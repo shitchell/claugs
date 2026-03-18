@@ -2,8 +2,8 @@
 
 import pytest
 
-from claude_stream.grouping import parse_group_by_spec
-from claude_stream.models import GroupByConfig
+from claude_logs.grouping import parse_group_by_spec
+from claude_logs.models import GroupByConfig
 
 
 class TestParseGroupBySpec:

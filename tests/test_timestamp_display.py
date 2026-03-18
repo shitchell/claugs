@@ -2,8 +2,8 @@
 
 from datetime import datetime, timezone
 
-from claude_stream.blocks import HeaderBlock, Style
-from claude_stream.models import (
+from claude_logs.blocks import HeaderBlock, Style
+from claude_logs.models import (
     AssistantMessage,
     QueueOperationMessage,
     RenderConfig,

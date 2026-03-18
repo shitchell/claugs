@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import patch
 
-from claude_stream.cli import main
+from claude_logs.cli import main
 from conftest import create_session_file
 
 

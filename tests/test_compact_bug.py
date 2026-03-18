@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import patch
 
-from claude_stream.cli import parse_args
+from claude_logs.cli import parse_args
 
 
 class TestCompactFlag:
@@ -16,7 +16,9 @@ class TestCompactFlag:
 
     def test_compact_with_explicit_override(self):
         """--compact --show-thinking should show thinking (explicit wins)."""
-        with patch.object(sys, "argv", ["claude-stream", "--compact", "--show-thinking", "--latest"]):
+        with patch.object(
+            sys, "argv", ["claude-stream", "--compact", "--show-thinking", "--latest"]
+        ):
             args = parse_args()
         assert args.compact is True
         assert args.show_thinking is True

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from claude_stream.grouping import compute_bucket_key
+from claude_logs.grouping import compute_bucket_key
 
 
 class TestComputeBucketKey:

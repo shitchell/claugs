@@ -3,9 +3,9 @@
 import json
 from pathlib import Path
 
-from claude_stream.grouping import FileHandle, render_grouped
-from claude_stream.formatters import PlainFormatter
-from claude_stream.models import GroupByConfig, RenderConfig
+from claude_logs.grouping import FileHandle, render_grouped
+from claude_logs.formatters import PlainFormatter
+from claude_logs.models import GroupByConfig, RenderConfig
 
 
 def _write_jsonl(path: Path, messages: list[dict]) -> Path:

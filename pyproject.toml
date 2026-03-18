@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "claude-stream"
-version = "0.4.0"
-description = "Parse and prettify Claude Code JSONL stream output"
+name = "claugs"
+version = "0.5.0"
+description = "Parse and prettify Claude Code JSONL session logs"
 readme = "README.md"
 license = "WTFPL"
 requires-python = ">=3.10"
 authors = [
     { name = "Shaun Mitchell" }
 ]
-keywords = ["claude", "anthropic", "jsonl", "cli", "stream"]
+keywords = ["claude", "anthropic", "jsonl", "cli", "logs"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -40,12 +40,15 @@ dev = [
 ]
 
 [project.scripts]
-claude-stream = "claude_stream.cli:main"
+claugs = "claude_logs.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/claude_logs"]
 
 [tool.pytest.ini_options]
 pythonpath = ["tests"]
 
 [project.urls]
-Homepage = "https://github.com/shitchell/claude-stream"
-Repository = "https://github.com/shitchell/claude-stream"
-Issues = "https://github.com/shitchell/claude-stream/issues"
+Homepage = "https://github.com/shitchell/claugs"
+Repository = "https://github.com/shitchell/claugs"
+Issues = "https://github.com/shitchell/claugs/issues"

@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch
 
-from claude_stream.dateparse import parse_datetime
+from claude_logs.dateparse import parse_datetime
 
 
 class TestParseDatetimeISO:
@@ -31,26 +31,26 @@ class TestParseDatetimeISO:
 class TestParseDatetimeKeywords:
     """Test keyword substitutions."""
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_today(self, mock_now):
         mock_now.return_value = datetime(2026, 3, 17, 12, 0, 0, tzinfo=timezone.utc)
         result = parse_datetime("today")
         assert result.date() == datetime(2026, 3, 17).date()
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_tomorrow(self, mock_now):
         mock_now.return_value = datetime(2026, 3, 17, 12, 0, 0, tzinfo=timezone.utc)
         result = parse_datetime("tomorrow")
         assert result.date() == datetime(2026, 3, 18).date()
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_noon(self, mock_now):
         mock_now.return_value = datetime(2026, 3, 17, 9, 0, 0, tzinfo=timezone.utc)
         result = parse_datetime("noon")
         assert result.hour == 12
         assert result.minute == 0
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_midnight(self, mock_now):
         mock_now.return_value = datetime(2026, 3, 17, 9, 0, 0, tzinfo=timezone.utc)
         result = parse_datetime("midnight")
@@ -61,42 +61,42 @@ class TestParseDatetimeKeywords:
 class TestParseDatetimeRelative:
     """Test relative time parsing."""
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_now_minus_2h(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base
         result = parse_datetime("now -2h")
         assert result == base - timedelta(hours=2)
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_plus_30m(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base
         result = parse_datetime("+30m")
         assert result == base + timedelta(minutes=30)
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_5d(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base
         result = parse_datetime("5d")
         assert result == base + timedelta(days=5)
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_30_minutes_ago(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base
         result = parse_datetime("30 minutes ago")
         assert result == base - timedelta(minutes=30)
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_2_hours_ago(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base
         result = parse_datetime("2 hours ago")
         assert result == base - timedelta(hours=2)
 
-    @patch("claude_stream.dateparse._now")
+    @patch("claude_logs.dateparse._now")
     def test_minus_1w(self, mock_now):
         base = datetime(2026, 3, 17, 14, 0, 0, tzinfo=timezone.utc)
         mock_now.return_value = base

@@ -1,7 +1,7 @@
 """Tests for HeaderBlock suffix rendering in all formatters."""
 
-from claude_stream.blocks import HeaderBlock, Style
-from claude_stream.formatters import ANSIFormatter, MarkdownFormatter, PlainFormatter
+from claude_logs.blocks import HeaderBlock, Style
+from claude_logs.formatters import ANSIFormatter, MarkdownFormatter, PlainFormatter
 
 
 class TestHeaderSuffixANSI:
