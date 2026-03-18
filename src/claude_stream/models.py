@@ -7,6 +7,7 @@ and the parse_message function for parsing JSON data into message objects.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime as _datetime
 from typing import Annotated, Any, Literal, Union
 
 from pydantic import BaseModel, Field
@@ -149,6 +150,8 @@ class RenderConfig:
     show_tool_results: bool = True
     show_metadata: bool = False
     show_line_numbers: bool = False
+    show_timestamps: bool = True
+    timestamp_format: str = "%Y-%m-%d %H:%M:%S"
 
     # Filtering
     show_types: set[str] = field(
@@ -343,6 +346,17 @@ class BaseMessage(BaseModel):
 
     model_config = {"extra": "allow", "populate_by_name": True}
 
+    def format_timestamp_suffix(self, config: RenderConfig) -> str:
+        """Format the timestamp as a header suffix string."""
+        if not config.show_timestamps or not self.timestamp:
+            return ""
+        try:
+            dt = _datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
+            formatted = dt.strftime(config.timestamp_format)
+            return f"· {formatted}"
+        except (ValueError, OSError):
+            return ""
+
     def render(self, config: RenderConfig) -> list[RenderBlock]:
         """Render this message to blocks. Override in subclasses."""
         return [TextBlock(text=f"[Unknown message type: {self.type}]")]
@@ -413,6 +427,7 @@ class AgentStyleMessage(BaseMessage):
                 icon=self.get_agent_icon(),
                 level=2,
                 styles={Style.ASSISTANT, Style.BOLD},
+                suffix=self.format_timestamp_suffix(config),
             )
         ]
 
@@ -573,7 +588,7 @@ class UserMessage(BaseMessage):
         blocks: list[RenderBlock] = []
 
         label = "USER [meta]" if meta else "USER"
-        blocks.append(HeaderBlock(text=label, icon="◂", level=2, styles={Style.USER}))
+        blocks.append(HeaderBlock(text=label, icon="◂", level=2, styles={Style.USER}, suffix=self.format_timestamp_suffix(config)))
 
         content = self.message.get("content")
         if isinstance(content, str) and content:
@@ -624,6 +639,7 @@ class UserMessage(BaseMessage):
                 icon="◆",
                 level=2,
                 styles={Style.ASSISTANT, Style.BOLD},
+                suffix=self.format_timestamp_suffix(config),
             )
         )
 
@@ -675,7 +691,7 @@ class UserMessage(BaseMessage):
 
             blocks.append(
                 HeaderBlock(
-                    text=f"Command: {cmd_name}", icon="▸", level=3, styles={Style.USER}
+                    text=f"Command: {cmd_name}", icon="▸", level=3, styles={Style.USER}, suffix=self.format_timestamp_suffix(config)
                 )
             )
 
@@ -730,6 +746,7 @@ class SystemMessage(SystemStyleMessage):
                 icon="▸",
                 level=2,
                 styles={Style.SYSTEM},
+                suffix=self.format_timestamp_suffix(config),
             )
         )
 
@@ -769,6 +786,7 @@ class FileHistorySnapshot(SystemStyleMessage):
                 icon="📸",
                 level=2,
                 styles={Style.SYSTEM},
+                suffix=self.format_timestamp_suffix(config),
             ),
             SpacerBlock(),
         ]
@@ -788,6 +806,7 @@ class SummaryMessage(BaseMessage):
                 prefix="Summary:",
                 level=1,
                 styles={Style.INFO},
+                suffix=self.format_timestamp_suffix(config),
             ),
             SpacerBlock(),
         ]
@@ -809,6 +828,7 @@ class QueueOperationMessage(SystemStyleMessage):
                 icon="⚙",
                 level=2,
                 styles={Style.SYSTEM},
+                suffix=self.format_timestamp_suffix(config),
             )
         )
 
@@ -837,7 +857,10 @@ class ResultMessage(BaseMessage):
         blocks.append(DividerBlock(char="═", width=30))
         blocks.append(
             HeaderBlock(
-                text="SESSION COMPLETE", level=1, styles={Style.BOLD, Style.INFO}
+                text="SESSION COMPLETE",
+                level=1,
+                styles={Style.BOLD, Style.INFO},
+                suffix=self.format_timestamp_suffix(config),
             )
         )
         blocks.append(DividerBlock(char="═", width=30))
