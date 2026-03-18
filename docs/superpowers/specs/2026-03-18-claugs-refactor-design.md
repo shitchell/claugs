@@ -47,9 +47,9 @@ keywords = ["claude", "anthropic", "jsonl", "cli", "logs"]
 claugs = "claude_logs.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/shitchell/claude-stream"
-Repository = "https://github.com/shitchell/claude-stream"
-Issues = "https://github.com/shitchell/claude-stream/issues"
+Homepage = "https://github.com/shitchell/claugs"
+Repository = "https://github.com/shitchell/claugs"
+Issues = "https://github.com/shitchell/claugs/issues"
 ```
 
 Note: GitHub repo URL stays as `claude-stream` unless manually renamed on GitHub.
