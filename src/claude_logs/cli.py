@@ -281,24 +281,21 @@ Output Formats:
     plain       Plain text, no formatting
 
 Examples:
-    %(prog)s session.jsonl                      # Parse entire file
-    %(prog)s session.jsonl -n 20                # Show last 20 lines
-    %(prog)s --latest -n 50                     # Last 50 lines of most recent session
-    %(prog)s --latest --format markdown > out.md
-    %(prog)s watch ~/.claude/projects/          # Watch all sessions
-    %(prog)s watch .                            # Watch current dir's Claude sessions
-    %(prog)s watch ~/myproject -n 10            # Watch project with initial context
-    %(prog)s --search "error message"           # Find and render matching sessions
-    %(prog)s --search "error" -l                # List matching filepaths
-    %(prog)s --latest --after "today"           # Today's messages only
-    %(prog)s --after "now -2h" --before "now" . # Messages from last 2 hours
-    %(prog)s --latest --hide-timestamps         # Hide timestamp display
-    %(prog)s --after "today" . --group-by time:%%Y%%m%%d%%H  # Interleave by hour
-    %(prog)s --search "error" --group-by project             # Group by project
+    %(prog)s show session.jsonl                         # Render a session
+    %(prog)s show session.jsonl -n 20                   # Last 20 lines
+    %(prog)s show --latest -n 50                        # Last 50 of most recent
+    %(prog)s show --latest --format markdown > out.md
+    %(prog)s show --search "error" -l                   # List matching filepaths
+    %(prog)s show --search "bug" --since "yesterday" .  # Search recent sessions
+    %(prog)s show --since "today" ~/myproject            # Today's messages
+    %(prog)s show --since "2h ago" . --group-by time:%%H # Interleave by hour
+    %(prog)s watch ~/.claude/projects/                  # Watch all sessions
+    %(prog)s watch .                                    # Watch current project
+    %(prog)s watch ~/myproject -n 10                    # Watch with context
         """,
     )
 
-    subparsers = parser.add_subparsers(dest="command", required=False)
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     # -- show subcommand --
     show_parser = subparsers.add_parser(
@@ -356,26 +353,7 @@ Examples:
         "path", type=Path, help="JSONL filepath or directory to watch"
     )
 
-    # Default subcommand handling: check if the first non-flag argument
-    # is a known subcommand. If not, inject "show" so positional paths
-    # and show-specific flags are recognized.
-    # This makes "claugs file.jsonl" equivalent to "claugs show file.jsonl".
-    raw_args = sys.argv[1:]
-    known_commands = {"show", "watch"}
-
-    # Find first non-flag argument
-    first_positional = None
-    for arg in raw_args:
-        if arg.startswith("-"):
-            continue
-        first_positional = arg
-        break
-
-    if first_positional not in known_commands:
-        # No subcommand given — inject "show"
-        raw_args = ["show"] + raw_args
-
-    args = parser.parse_args(raw_args)
+    args = parser.parse_args()
     return parser, args
 
 
