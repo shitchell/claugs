@@ -48,6 +48,7 @@ class HeaderBlock(RenderBlock):
     level: int = 1  # 1 = top level, 2 = subheader, etc.
     icon: str = ""  # Optional prefix icon
     prefix: str = ""  # Optional prefix text (e.g., "Summary:", "Tool:")
+    suffix: str = ""  # Optional suffix text, styled independently (e.g., timestamp)
 
 
 @dataclass

@@ -111,7 +111,10 @@ class ANSIFormatter(Formatter):
             parts.append(block.prefix)
         parts.append(block.text)
         text = " ".join(parts)
-        return self._apply_styles(text, block.styles | {Style.BOLD})
+        text = self._apply_styles(text, block.styles | {Style.BOLD})
+        if block.suffix:
+            text += self._apply_styles(f" {block.suffix}", {Style.DIM})
+        return text
 
     def _format_text(self, block: TextBlock) -> str:
         styled = self._apply_styles(block.text, block.styles)
@@ -162,17 +165,19 @@ class MarkdownFormatter(Formatter):
 
     def _format_header(self, block: HeaderBlock) -> str:
         hashes = "#" * min(block.level, 6)
-        # For level 1 (document title), use clean text only
         if block.level == 1:
-            return f"{hashes} {block.text}"
-        # For other levels, include icon and prefix
-        parts = []
-        if block.icon:
-            parts.append(block.icon)
-        if block.prefix:
-            parts.append(block.prefix)
-        parts.append(block.text)
-        return f"{hashes} {' '.join(parts)}"
+            text = f"{hashes} {block.text}"
+        else:
+            parts = []
+            if block.icon:
+                parts.append(block.icon)
+            if block.prefix:
+                parts.append(block.prefix)
+            parts.append(block.text)
+            text = f"{hashes} {' '.join(parts)}"
+        if block.suffix:
+            text += f" {block.suffix}"
+        return text
 
     def _format_text(self, block: TextBlock) -> str:
         styled = self._apply_styles(block.text, block.styles)
@@ -213,7 +218,10 @@ class PlainFormatter(Formatter):
         if block.prefix:
             parts.append(block.prefix)
         parts.append(block.text)
-        return " ".join(parts)
+        text = " ".join(parts)
+        if block.suffix:
+            text += f" {block.suffix}"
+        return text
 
     def _format_text(self, block: TextBlock) -> str:
         return self._indent(block.text, block.indent)
