@@ -41,9 +41,7 @@ class TestTimestampFlags:
         assert args.timestamp_format is None
 
     def test_compact_hides_timestamps(self):
-        with patch.object(
-            sys, "argv", ["claude-stream", "--compact", "--latest"]
-        ):
+        with patch.object(sys, "argv", ["claude-stream", "--compact", "--latest"]):
             args = parse_args()
         assert args.compact is True
         assert args.show_timestamps is None

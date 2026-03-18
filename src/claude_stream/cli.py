@@ -302,9 +302,7 @@ def _find_matching_files(
                         ts_str = data.get("timestamp", "")
                         if not ts_str:
                             continue  # No timestamp on this line, keep looking
-                        msg_dt = datetime.fromisoformat(
-                            ts_str.replace("Z", "+00:00")
-                        )
+                        msg_dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
                         if msg_dt.tzinfo is None:
                             msg_dt = msg_dt.replace(tzinfo=timezone.utc)
                         in_range = True
@@ -390,18 +388,14 @@ def main() -> int:
         try:
             config.before = parse_datetime(args.before)
         except ValueError:
-            print(
-                f"error: cannot parse --before date: {args.before}", file=sys.stderr
-            )
+            print(f"error: cannot parse --before date: {args.before}", file=sys.stderr)
             return 1
 
     if args.after:
         try:
             config.after = parse_datetime(args.after)
         except ValueError:
-            print(
-                f"error: cannot parse --after date: {args.after}", file=sys.stderr
-            )
+            print(f"error: cannot parse --after date: {args.after}", file=sys.stderr)
             return 1
 
     # Handle watch mode
@@ -427,19 +421,13 @@ def main() -> int:
     if args.search_text:
         # Mutual exclusivity check
         if args.watch:
-            print(
-                "error: cannot combine --search with --watch", file=sys.stderr
-            )
+            print("error: cannot combine --search with --watch", file=sys.stderr)
             return 1
         if args.session:
-            print(
-                "error: cannot combine --search with --session", file=sys.stderr
-            )
+            print("error: cannot combine --search with --session", file=sys.stderr)
             return 1
         if args.latest:
-            print(
-                "error: cannot combine --search with --latest", file=sys.stderr
-            )
+            print("error: cannot combine --search with --latest", file=sys.stderr)
             return 1
 
         # Determine search scope
