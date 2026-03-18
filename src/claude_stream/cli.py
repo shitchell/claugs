@@ -43,7 +43,7 @@ def encode_path(path: str) -> str:
     return "".join(result)
 
 
-def resolve_watch_path(path: Path) -> Path:
+def resolve_project_path(path: Path) -> Path:
     """Resolve a path to its Claude project directory if needed.
 
     If the path is already under ~/.claude, returns it as-is.
@@ -223,7 +223,7 @@ def main() -> int:
 
     # Handle watch mode
     if args.watch:
-        watch_target = resolve_watch_path(args.watch)
+        watch_target = resolve_project_path(args.watch)
         if not watch_target.exists():
             print(f"error: path not found: {args.watch}", file=sys.stderr)
             # If we tried to resolve to a Claude path, mention it
