@@ -39,33 +39,11 @@ class TestShowBasicRendering:
         # Should contain result block
         assert "SESSION COMPLETE" in out
 
-    def test_render_with_implicit_show_flags(self, fixtures_dir, capsys):
-        """claugs --latest (no 'show' keyword) uses implicit show subcommand."""
-        fpath = fixtures_dir / "v2.1.77" / "complete_session.jsonl"
-        with (
-            patch.object(sys, "argv", ["claugs", "--latest", "--hide-timestamps"]),
-            patch("claude_logs.cli.find_session_file", return_value=fpath),
-        ):
-            code = main()
-        assert code == 0
-        out = capsys.readouterr().out
-        assert "Hello, what files are in this directory?" in out
-        assert "SESSION COMPLETE" in out
-
-    def test_render_with_implicit_show_positional(self, fixtures_dir, capsys):
-        """claugs <file> (positional path, no 'show') also works."""
-        fpath = str(fixtures_dir / "v2.1.75" / "complete_session.jsonl")
-        with patch.object(sys, "argv", ["claugs", fpath, "--hide-timestamps"]):
-            code = main()
-        assert code == 0
-        out = capsys.readouterr().out
-        assert "Hello, what files are in this directory?" in out
-
     def test_render_latest(self, fixtures_dir, capsys):
-        """claugs --latest renders the most recent session."""
+        """claugs show --latest renders the most recent session."""
         fpath = fixtures_dir / "v2.1.77" / "complete_session.jsonl"
         with (
-            patch.object(sys, "argv", ["claugs", "--latest", "--hide-timestamps"]),
+            patch.object(sys, "argv", ["claugs", "show", "--latest", "--hide-timestamps"]),
             patch("claude_logs.cli.find_session_file", return_value=fpath),
         ):
             code = main()
@@ -626,9 +604,9 @@ class TestShowFilepathsOnly:
         assert "session-001.jsonl" not in out
 
     def test_filepaths_only_stdin_error(self, capsys):
-        """claugs -l with stdin is an error."""
+        """claugs show -l with stdin is an error."""
         with (
-            patch.object(sys, "argv", ["claugs", "-l"]),
+            patch.object(sys, "argv", ["claugs", "show", "-l"]),
             patch.object(sys, "stdin", wraps=sys.stdin) as mock_stdin,
         ):
             mock_stdin.isatty = lambda: False
@@ -947,11 +925,11 @@ class TestParseArgs:
         assert args.latest is True
 
     def test_implicit_show_command(self):
-        """Omitting 'show' defaults to the show subcommand."""
+        """Omitting a subcommand results in an error (subcommand is required)."""
         with patch.object(sys, "argv", ["claugs", "--latest"]):
-            _, args = parse_args()
-        assert args.command == "show"
-        assert args.latest is True
+            with pytest.raises(SystemExit) as exc_info:
+                parse_args()
+        assert exc_info.value.code != 0
 
     def test_watch_command_parsed(self):
         """'watch' subcommand is parsed correctly."""
@@ -970,7 +948,7 @@ class TestParseArgs:
 
     def test_compact_flag(self):
         """--compact flag is parsed."""
-        with patch.object(sys, "argv", ["claugs", "--compact", "--latest"]):
+        with patch.object(sys, "argv", ["claugs", "show", "--compact", "--latest"]):
             _, args = parse_args()
         assert args.compact is True
 
