@@ -35,7 +35,8 @@ class TestBeforeAfterFlags:
                 "show",
                 "--after",
                 "2026-03-17T15:00:00",
-                "--hide-timestamps",
+                "--hide",
+                "timestamps",
                 str(tmp_path / "session-001.jsonl"),
             ],
         ):
@@ -80,7 +81,8 @@ class TestDirectoryMode:
                 "show",
                 "--after",
                 "2026-03-16",
-                "--hide-timestamps",
+                "--hide",
+                "timestamps",
                 str(tmp_path),
             ],
         ):

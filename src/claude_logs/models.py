@@ -183,30 +183,14 @@ class GroupByConfig:
 class RenderConfig:
     """Configuration for rendering messages."""
 
-    show_thinking: bool = True
-    show_tool_results: bool = True
-    show_metadata: bool = False
-    show_line_numbers: bool = False
-    show_timestamps: bool = True
+    filters: FilterConfig = field(default_factory=FilterConfig)
     timestamp_format: str = "%Y-%m-%d %H:%M:%S"
 
     # Timestamp filtering
     before: _datetime | None = None
     after: _datetime | None = None
 
-    # Filtering
-    show_types: set[str] = field(
-        default_factory=lambda: {
-            "system",
-            "assistant",
-            "user",
-            "summary",
-            "queue-operation",
-            "result",
-        }
-    )
-    show_subtypes: set[str] = field(default_factory=set)
-    show_tools: set[str] = field(default_factory=set)
+    # Text filtering
     grep_patterns: list[str] = field(default_factory=list)
     exclude_patterns: list[str] = field(default_factory=list)
 
@@ -250,7 +234,7 @@ class ThinkingContent(ContentBlock):
     signature: str = ""  # Cryptographic signature, usually not displayed
 
     def render(self, config: RenderConfig) -> list[RenderBlock]:
-        if not config.show_thinking:
+        if not config.filters.is_visible("thinking"):
             return []
 
         blocks: list[RenderBlock] = []
@@ -269,6 +253,9 @@ class ToolUseContent(ContentBlock):
     input: dict[str, Any] = Field(default_factory=dict)
 
     def render(self, config: RenderConfig) -> list[RenderBlock]:
+        if not config.filters.is_visible("tools"):
+            return []
+
         blocks: list[RenderBlock] = []
 
         # Tool header
@@ -280,12 +267,11 @@ class ToolUseContent(ContentBlock):
         blocks.append(TextBlock(text=f"({self.id})", indent=1, styles={Style.METADATA}))
 
         # Tool inputs
-        if config.show_tool_results:
-            for key, value in self.input.items():
-                value_str = str(value)
-                if len(value_str) > TOOL_INPUT_TRUNCATE_LENGTH:
-                    value_str = value_str[:TOOL_INPUT_TRUNCATE_LENGTH] + "..."
-                blocks.append(KeyValueBlock(key=key, value=value_str, indent=2))
+        for key, value in self.input.items():
+            value_str = str(value)
+            if len(value_str) > TOOL_INPUT_TRUNCATE_LENGTH:
+                value_str = value_str[:TOOL_INPUT_TRUNCATE_LENGTH] + "..."
+            blocks.append(KeyValueBlock(key=key, value=value_str, indent=2))
 
         return blocks
 
@@ -299,6 +285,9 @@ class ToolResultContent(ContentBlock):
     is_error: bool = False
 
     def render(self, config: RenderConfig) -> list[RenderBlock]:
+        if not config.filters.is_visible("tools"):
+            return []
+
         blocks: list[RenderBlock] = []
 
         # Result header
@@ -316,7 +305,7 @@ class ToolResultContent(ContentBlock):
         )
 
         # Result content
-        if config.show_tool_results and self.content:
+        if self.content:
             content_str = self._content_to_string()
             lines = content_str.split("\n")
 
@@ -392,7 +381,7 @@ class BaseMessage(BaseModel):
 
     def format_timestamp_suffix(self, config: RenderConfig) -> str:
         """Format the timestamp as a header suffix string."""
-        if not config.show_timestamps or not self.timestamp:
+        if not config.filters.is_visible("timestamps") or not self.timestamp:
             return ""
         try:
             dt = _datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
@@ -409,7 +398,7 @@ class BaseMessage(BaseModel):
 
     def render_metadata(self, config: RenderConfig) -> list[RenderBlock]:
         """Render metadata block if enabled."""
-        if not config.show_metadata:
+        if not config.filters.is_visible("metadata"):
             return []
 
         blocks: list[RenderBlock] = []
@@ -611,7 +600,7 @@ class UserMessage(BaseMessage):
         elif self.is_tool_result():
             return "tool-result"
         elif self.is_meta():
-            return "meta"
+            return "system-meta"
         elif self.is_local_command():
             return "local-command"
         else:
@@ -757,7 +746,7 @@ class UserMessage(BaseMessage):
                 blocks.append(KeyValueBlock(key="args", value=cmd_args, indent=1))
 
         elif content.startswith("<local-command-stdout>"):
-            if config.show_tool_results:
+            if config.filters.is_visible("tools"):
                 stdout = content.replace("<local-command-stdout>", "").replace(
                     "</local-command-stdout>", ""
                 )

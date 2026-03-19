@@ -88,7 +88,8 @@ class TestSearchRenderMode:
                 "show",
                 "--search",
                 "needle",
-                "--hide-timestamps",
+                "--hide",
+                "timestamps",
                 str(tmp_path),
             ],
         ):

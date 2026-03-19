@@ -158,7 +158,7 @@ def parse_args():
     default subcommand injection.
     """
 
-    # -- Shared parent: display/visibility options --
+    # -- Shared parent: display/format options --
     display_parent = argparse.ArgumentParser(add_help=False)
 
     display_parent.add_argument(
@@ -169,53 +169,41 @@ def parse_args():
         help="Output format (default: markdown if CLAUDECODE is set, ansi if TTY, plain if piped)",
     )
     display_parent.add_argument(
-        "--compact",
-        action="store_true",
-        help="Shorthand for --hide-metadata --hide-thinking --hide-tool-results",
-    )
-    display_parent.add_argument(
-        "--show-timestamps",
-        dest="show_timestamps",
-        action="store_true",
-        default=None,
-    )
-    display_parent.add_argument(
-        "--hide-timestamps", dest="show_timestamps", action="store_false"
-    )
-    display_parent.add_argument(
         "--timestamp-format",
         dest="timestamp_format",
         default=None,
         help="Timestamp format string (default: %%Y-%%m-%%d %%H:%%M:%%S)",
     )
-    display_parent.add_argument(
-        "--show-thinking", dest="show_thinking", action="store_true", default=None
-    )
-    display_parent.add_argument(
-        "--hide-thinking", dest="show_thinking", action="store_false"
-    )
-    display_parent.add_argument(
-        "--show-tool-results",
-        dest="show_tool_results",
-        action="store_true",
-        default=None,
-    )
-    display_parent.add_argument(
-        "--hide-tool-results", dest="show_tool_results", action="store_false"
-    )
-    display_parent.add_argument(
-        "--show-metadata", dest="show_metadata", action="store_true", default=None
-    )
-    display_parent.add_argument(
-        "--hide-metadata", dest="show_metadata", action="store_false"
-    )
-    display_parent.add_argument(
-        "--line-numbers", action="store_true", help="Show message numbers"
-    )
 
     # -- Shared parent: filtering options --
     filter_parent = argparse.ArgumentParser(add_help=False)
 
+    filter_parent.add_argument(
+        "--show-only",
+        action="append",
+        dest="show_only_filters",
+        metavar="NAME[,NAME]",
+        help="Show ONLY these, hide everything else (repeatable, comma-separated)",
+    )
+    filter_parent.add_argument(
+        "--show",
+        action="append",
+        dest="show_filters",
+        metavar="NAME[,NAME]",
+        help="Ensure these are visible (repeatable, comma-separated)",
+    )
+    filter_parent.add_argument(
+        "--hide",
+        action="append",
+        dest="hide_filters",
+        metavar="NAME[,NAME]",
+        help="Remove these from output (repeatable, comma-separated)",
+    )
+    filter_parent.add_argument(
+        "--compact",
+        action="store_true",
+        help="Hide non-essential content (thinking, tools, metadata, timestamps, system messages)",
+    )
     filter_parent.add_argument(
         "--after",
         "--since",
@@ -243,24 +231,6 @@ def parse_args():
         help="Exclude messages matching pattern (repeatable)",
     )
     filter_parent.add_argument(
-        "--show-type",
-        action="append",
-        dest="show_types",
-        help="Show only these message types (repeatable)",
-    )
-    filter_parent.add_argument(
-        "--show-subtype",
-        action="append",
-        dest="show_subtypes",
-        help="Show only these subtypes (repeatable)",
-    )
-    filter_parent.add_argument(
-        "--show-tool",
-        action="append",
-        dest="show_tools",
-        help="Show only these tools (repeatable)",
-    )
-    filter_parent.add_argument(
         "-n",
         "--lines",
         type=int,
@@ -285,6 +255,11 @@ Examples:
     %(prog)s show session.jsonl -n 20                   # Last 20 lines
     %(prog)s show --latest -n 50                        # Last 50 of most recent
     %(prog)s show --latest --format markdown > out.md
+    %(prog)s show --hide timestamps                     # Hide timestamps
+    %(prog)s show --show metadata                       # Show metadata
+    %(prog)s show --show-only user,assistant             # Only user + assistant
+    %(prog)s show --compact                             # Hide non-essential content
+    %(prog)s show --list-filters                        # Show available filters
     %(prog)s show --search "error" -l                   # List matching filepaths
     %(prog)s show --search "bug" --since "yesterday" .  # Search recent sessions
     %(prog)s show --since "today" ~/myproject            # Today's messages
@@ -340,6 +315,11 @@ Examples:
         metavar="SPEC",
         help="Group by 'project' and/or 'time:<strftime>'",
     )
+    show_parser.add_argument(
+        "--list-filters",
+        action="store_true",
+        help="Show available filter names and exit",
+    )
 
     # -- watch subcommand --
     watch_parser = subparsers.add_parser(
@@ -357,53 +337,116 @@ Examples:
     return parser, args
 
 
+def _build_filters(args: argparse.Namespace) -> "FilterConfig":
+    """Build a FilterConfig from parsed arguments."""
+    from .models import FilterConfig
+
+    show_only: set[str] = set()
+    shown: set[str] = set()
+    hidden: set[str] = set()
+
+    if getattr(args, "show_only_filters", None):
+        for spec in args.show_only_filters:
+            show_only.update(name.strip() for name in spec.split(","))
+    if args.compact:
+        hidden.update(
+            {
+                "thinking",
+                "tools",
+                "metadata",
+                "timestamps",
+                "system",
+                "summary",
+                "queue-operation",
+                "result",
+            }
+        )
+    if getattr(args, "hide_filters", None):
+        for spec in args.hide_filters:
+            hidden.update(name.strip() for name in spec.split(","))
+    if getattr(args, "show_filters", None):
+        for spec in args.show_filters:
+            shown.update(name.strip() for name in spec.split(","))
+
+    # Warn on unknown filter names
+    _KNOWN_FILTERS = {
+        "thinking",
+        "tools",
+        "metadata",
+        "timestamps",
+        "line-numbers",
+        "user-input",
+        "tool-result",
+        "subagent-result",
+        "system-meta",
+        "local-command",
+        "init",
+        "compact-boundary",
+        "success",
+        "system",
+        "assistant",
+        "user",
+        "summary",
+        "queue-operation",
+        "result",
+        "file-history-snapshot",
+    }
+    for name in show_only | shown | hidden:
+        if name not in _KNOWN_FILTERS:
+            print(f"warning: unknown filter: {name}", file=sys.stderr)
+
+    return FilterConfig(show_only=show_only, shown=shown, hidden=hidden)
+
+
 def _build_config(args: argparse.Namespace) -> RenderConfig:
     """Build a RenderConfig from parsed arguments."""
-    config = RenderConfig()
-
-    # Apply --compact first
-    if args.compact:
-        config.show_metadata = False
-        config.show_thinking = False
-        config.show_tool_results = False
-        config.show_timestamps = False
-        config.show_types = {"assistant", "user"}
-
-    # Apply explicit visibility flags (override compact if set)
-    if args.show_thinking is not None:
-        config.show_thinking = args.show_thinking
-    if args.show_tool_results is not None:
-        config.show_tool_results = args.show_tool_results
-    if args.show_metadata is not None:
-        config.show_metadata = args.show_metadata
-    if args.show_timestamps is not None:
-        config.show_timestamps = args.show_timestamps
+    filters = _build_filters(args)
+    config = RenderConfig(filters=filters)
     if args.timestamp_format is not None:
         config.timestamp_format = args.timestamp_format
-
-    # Note: show_line_numbers uses store_true (default=False), not the None pattern,
-    # because it's opt-in only -- --compact doesn't affect it.
-    config.show_line_numbers = args.line_numbers
-
-    if args.show_types:
-        config.show_types = set(args.show_types)
-    if args.show_subtypes:
-        config.show_subtypes = set(args.show_subtypes)
-    if args.show_tools:
-        config.show_tools = set(args.show_tools)
+    if args.before:
+        config.before = parse_datetime(args.before)
+    if args.after:
+        config.after = parse_datetime(args.after)
     if args.grep_patterns:
         config.grep_patterns = args.grep_patterns
     if args.exclude_patterns:
         config.exclude_patterns = args.exclude_patterns
-
-    # Parse --before/--after into datetimes
-    if args.before:
-        config.before = parse_datetime(args.before)
-
-    if args.after:
-        config.after = parse_datetime(args.after)
-
     return config
+
+
+def _print_filter_list() -> None:
+    """Print available filter names and exit."""
+    print("Available filter names for --show, --hide, --show-only:\n")
+    print("Message types:")
+    print("  assistant          Assistant responses")
+    print("  user               User input messages")
+    print("  system             System messages (init, compact_boundary, etc.)")
+    print("  summary            Summary messages")
+    print("  queue-operation    Queue operation messages")
+    print("  result             Session result messages")
+    print("  file-history-snapshot  File history snapshots")
+    print()
+    print("User message subtypes:")
+    print("  user-input         Direct user input")
+    print("  tool-result        Tool result messages")
+    print("  subagent-result    Sub-agent result messages")
+    print("  system-meta        System-injected meta messages")
+    print("  local-command      Local slash command messages")
+    print()
+    print("System message subtypes:")
+    print("  init               System init messages")
+    print("  compact-boundary   Compaction boundary messages")
+    print("  success            Success result messages")
+    print()
+    print("Content visibility:")
+    print("  thinking           Thinking/reasoning blocks")
+    print("  tools              Tool use and tool result blocks")
+    print("  metadata           Message metadata (uuid, session, timestamp)")
+    print("  timestamps         Timestamp suffixes on headers")
+    print("  line-numbers       JSONL line number prefixes")
+    print()
+    print("Defaults hidden: metadata, line-numbers, file-history-snapshot")
 
 
 def _build_formatter(args: argparse.Namespace) -> Formatter:
@@ -486,6 +529,10 @@ def handle_show(
     args: argparse.Namespace, config: RenderConfig, formatter: Formatter
 ) -> int:
     """Handle the 'show' subcommand."""
+
+    if getattr(args, "list_filters", False):
+        _print_filter_list()
+        return 0
 
     # Parse --group-by
     group_config = None

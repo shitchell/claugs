@@ -27,7 +27,7 @@ class TestShowBasicRendering:
         """claugs show <file> renders the session."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -43,7 +43,7 @@ class TestShowBasicRendering:
         """claugs show --latest renders the most recent session."""
         fpath = fixtures_dir / "v2.1.77" / "complete_session.jsonl"
         with (
-            patch.object(sys, "argv", ["claugs", "show", "--latest", "--hide-timestamps"]),
+            patch.object(sys, "argv", ["claugs", "show", "--latest", "--hide", "timestamps"]),
             patch("claude_logs.cli.find_session_file", return_value=fpath),
         ):
             code = main()
@@ -64,7 +64,7 @@ class TestShowBasicRendering:
                     "show",
                     "--session",
                     "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                    "--hide-timestamps",
+                    "--hide", "timestamps",
                 ],
             ),
             patch("claude_logs.cli.find_session_file", return_value=fpath),
@@ -80,7 +80,7 @@ class TestShowBasicRendering:
 
         # First, render with timestamps shown
         with patch.object(
-            sys, "argv", ["claugs", "show", "--show-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--show", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -88,7 +88,7 @@ class TestShowBasicRendering:
 
         # Then, render with timestamps hidden
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -125,7 +125,7 @@ class TestShowBasicRendering:
                 "show",
                 "--timestamp-format",
                 "%H:%M",
-                "--show-timestamps",
+                "--show", "timestamps",
                 str(fpath),
             ],
         ):
@@ -161,7 +161,7 @@ class TestShowFiltering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--after",
                 "2026-03-15T10:00:10Z",
                 str(fpath),
@@ -186,7 +186,7 @@ class TestShowFiltering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--before",
                 "2026-03-15T10:00:10Z",
                 str(fpath),
@@ -212,7 +212,7 @@ class TestShowFiltering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--after",
                 "2026-03-15T10:00:05Z",
                 "--before",
@@ -246,7 +246,7 @@ class TestShowFiltering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--grep",
                 "README.md",
                 str(fpath),
@@ -270,7 +270,7 @@ class TestShowFiltering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--exclude",
                 "SESSION COMPLETE",
                 "--exclude",
@@ -287,8 +287,8 @@ class TestShowFiltering:
         # Other messages should still appear
         assert "Hello, what files are in this directory?" in out
 
-    def test_show_type_filter(self, fixtures_dir, capsys):
-        """--show-type limits to specific message types."""
+    def test_show_only_filter(self, fixtures_dir, capsys):
+        """--show-only limits to specific message types."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
             sys,
@@ -296,8 +296,8 @@ class TestShowFiltering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
-                "--show-type",
+                "--hide", "timestamps",
+                "--show-only",
                 "user",
                 str(fpath),
             ],
@@ -332,7 +332,7 @@ class TestShowSearch:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--search",
                 "README.md",
                 str(fpath),
@@ -353,7 +353,7 @@ class TestShowSearch:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--search",
                 "xyzzy_nonexistent_text",
                 str(fpath),
@@ -397,7 +397,7 @@ class TestShowSearch:
                     "--search",
                     "config.json",
                     "--latest",
-                    "--hide-timestamps",
+                    "--hide", "timestamps",
                 ],
             ),
             patch("claude_logs.cli.find_session_file", return_value=fpath),
@@ -472,7 +472,7 @@ class TestShowDirectoryMode:
         # The multi_project directory has project-a/session-001.jsonl and project-b/session-002.jsonl
         mp_dir = fixtures_dir / "multi_project"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(mp_dir)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(mp_dir)]
         ):
             code = main()
         assert code == 0
@@ -521,7 +521,7 @@ class TestShowDirectoryMode:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--group-by",
                 "project",
                 str(mp_dir),
@@ -542,7 +542,7 @@ class TestShowDirectoryMode:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--group-by",
                 "time:%Y%m%d%H",
                 str(mp_dir),
@@ -724,7 +724,7 @@ class TestFixtureRendering:
         """v2.1.75 fixture renders all message types correctly."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -765,7 +765,7 @@ class TestFixtureRendering:
         """v2.1.77 fixture renders all message types correctly."""
         fpath = fixtures_dir / "v2.1.77" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -799,7 +799,7 @@ class TestFixtureRendering:
             [
                 "claugs",
                 "show",
-                "--hide-timestamps",
+                "--hide", "timestamps",
                 "--group-by",
                 "project",
                 str(mp_dir),
@@ -821,7 +821,7 @@ class TestFixtureRendering:
         """Thinking blocks are rendered by default."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -830,12 +830,12 @@ class TestFixtureRendering:
         assert "Let me check the directory contents" in out
 
     def test_thinking_blocks_hidden(self, fixtures_dir, capsys):
-        """--hide-thinking suppresses thinking blocks."""
+        """--hide thinking suppresses thinking blocks."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--hide-timestamps", "--hide-thinking", str(fpath)],
+            ["claugs", "show", "--hide", "timestamps", "--hide", "thinking", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -851,7 +851,7 @@ class TestFixtureRendering:
         """Tool use (Bash) is rendered with tool name."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -864,7 +864,7 @@ class TestFixtureRendering:
         """Tool results are shown with content preview."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -874,12 +874,12 @@ class TestFixtureRendering:
         assert "README.md" in out
 
     def test_tool_results_hidden(self, fixtures_dir, capsys):
-        """--hide-tool-results suppresses tool result content."""
+        """--hide tools suppresses tool result content."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--hide-timestamps", "--hide-tool-results", str(fpath)],
+            ["claugs", "show", "--hide", "timestamps", "--hide", "tools", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -894,7 +894,7 @@ class TestFixtureRendering:
         """Result message shows cost, duration, tokens."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -981,7 +981,7 @@ class TestFormatSelection:
         """When not a TTY, plain format is used (no ANSI codes)."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -995,7 +995,7 @@ class TestFormatSelection:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--format", "plain", "--hide-timestamps", str(fpath)],
+            ["claugs", "show", "--format", "plain", "--hide", "timestamps", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1009,7 +1009,7 @@ class TestFormatSelection:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--format", "markdown", "--hide-timestamps", str(fpath)],
+            ["claugs", "show", "--format", "markdown", "--hide", "timestamps", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1024,7 +1024,7 @@ class TestFormatSelection:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--format", "ansi", "--hide-timestamps", str(fpath)],
+            ["claugs", "show", "--format", "ansi", "--hide", "timestamps", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1047,7 +1047,7 @@ class TestTailLines:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--hide-timestamps", "-n", "2", str(fpath)],
+            ["claugs", "show", "--hide", "timestamps", "-n", "2", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1069,7 +1069,7 @@ class TestTailLines:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--hide-timestamps", "-n", "1", str(fpath)],
+            ["claugs", "show", "--hide", "timestamps", "-n", "1", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1086,15 +1086,15 @@ class TestTailLines:
 
 
 class TestLineNumbers:
-    """Test --line-numbers flag."""
+    """Test --show line-numbers flag."""
 
     def test_line_numbers_shown(self, fixtures_dir, capsys):
-        """--line-numbers adds [N] prefix to messages."""
+        """--show line-numbers adds [N] prefix to messages."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--hide-timestamps", "--line-numbers", str(fpath)],
+            ["claugs", "show", "--hide", "timestamps", "--show", "line-numbers", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1105,10 +1105,10 @@ class TestLineNumbers:
         assert "[2]" in out
 
     def test_no_line_numbers_by_default(self, fixtures_dir, capsys):
-        """Without --line-numbers, no [N] prefixes appear."""
+        """Without --show line-numbers, no [N] prefixes appear."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -1122,13 +1122,13 @@ class TestLineNumbers:
 
 
 class TestMetadata:
-    """Test --show-metadata flag."""
+    """Test --show metadata flag."""
 
     def test_metadata_hidden_by_default(self, fixtures_dir, capsys):
         """Metadata is hidden by default."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(fpath)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(fpath)]
         ):
             code = main()
         assert code == 0
@@ -1137,12 +1137,12 @@ class TestMetadata:
         assert "| session:" not in out
 
     def test_metadata_shown(self, fixtures_dir, capsys):
-        """--show-metadata shows uuid, session, timestamp metadata."""
+        """--show metadata shows uuid, session, timestamp metadata."""
         fpath = fixtures_dir / "v2.1.75" / "complete_session.jsonl"
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--hide-timestamps", "--show-metadata", str(fpath)],
+            ["claugs", "show", "--hide", "timestamps", "--show", "metadata", str(fpath)],
         ):
             code = main()
         assert code == 0
@@ -1172,7 +1172,7 @@ class TestStdinProcessing:
         fake_stdin.isatty = lambda: False
 
         with (
-            patch.object(sys, "argv", ["claugs", "show", "--hide-timestamps"]),
+            patch.object(sys, "argv", ["claugs", "show", "--hide", "timestamps"]),
             patch.object(sys, "stdin", fake_stdin),
         ):
             code = main()
@@ -1195,7 +1195,7 @@ class TestEdgeCases:
         empty_file = tmp_path / "empty.jsonl"
         empty_file.write_text("")
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(empty_file)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(empty_file)]
         ):
             code = main()
         assert code == 0
@@ -1220,7 +1220,7 @@ class TestEdgeCases:
         )
         f = tmp_path / "blanks.jsonl"
         f.write_text(content)
-        with patch.object(sys, "argv", ["claugs", "show", "--hide-timestamps", str(f)]):
+        with patch.object(sys, "argv", ["claugs", "show", "--hide", "timestamps", str(f)]):
             code = main()
         assert code == 0
         out = capsys.readouterr().out
@@ -1244,7 +1244,7 @@ class TestEdgeCases:
         )
         f = tmp_path / "invalid.jsonl"
         f.write_text(content)
-        with patch.object(sys, "argv", ["claugs", "show", "--hide-timestamps", str(f)]):
+        with patch.object(sys, "argv", ["claugs", "show", "--hide", "timestamps", str(f)]):
             code = main()
         assert code == 0
         captured = capsys.readouterr()
@@ -1254,7 +1254,7 @@ class TestEdgeCases:
     def test_render_empty_directory(self, tmp_path, capsys):
         """An empty directory produces no output."""
         with patch.object(
-            sys, "argv", ["claugs", "show", "--hide-timestamps", str(tmp_path)]
+            sys, "argv", ["claugs", "show", "--hide", "timestamps", str(tmp_path)]
         ):
             code = main()
         assert code == 0

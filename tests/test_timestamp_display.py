@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from claude_logs.blocks import HeaderBlock, Style
 from claude_logs.models import (
     AssistantMessage,
+    FilterConfig,
     QueueOperationMessage,
     RenderConfig,
     ResultMessage,
@@ -26,12 +27,12 @@ def _find_header(blocks) -> HeaderBlock | None:
 def _expected_local(iso_utc: str, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
     """Convert a UTC ISO timestamp to expected local-time formatted string."""
     dt = datetime.fromisoformat(iso_utc.replace("Z", "+00:00")).astimezone()
-    return f"· {dt.strftime(fmt)}"
+    return f"\u00b7 {dt.strftime(fmt)}"
 
 
 class TestTimestampInHeaders:
     def test_assistant_message_has_timestamp_suffix(self, sample_assistant_message):
-        config = RenderConfig(show_timestamps=True)
+        config = RenderConfig()
         msg = parse_message(sample_assistant_message)
         blocks = msg.render(config)
         header = _find_header(blocks)
@@ -40,7 +41,7 @@ class TestTimestampInHeaders:
         assert expected in header.suffix
 
     def test_user_message_has_timestamp_suffix(self, sample_user_message):
-        config = RenderConfig(show_timestamps=True)
+        config = RenderConfig()
         msg = parse_message(sample_user_message)
         blocks = msg.render(config)
         header = _find_header(blocks)
@@ -49,7 +50,7 @@ class TestTimestampInHeaders:
         assert expected in header.suffix
 
     def test_system_message_has_timestamp_suffix(self, sample_system_init_message):
-        config = RenderConfig(show_timestamps=True)
+        config = RenderConfig()
         msg = parse_message(sample_system_init_message)
         blocks = msg.render(config)
         header = _find_header(blocks)
@@ -58,7 +59,7 @@ class TestTimestampInHeaders:
         assert expected in header.suffix
 
     def test_result_message_has_timestamp_suffix(self, sample_result_message):
-        config = RenderConfig(show_timestamps=True)
+        config = RenderConfig()
         msg = parse_message(sample_result_message)
         blocks = msg.render(config)
         headers = [b for b in blocks if isinstance(b, HeaderBlock)]
@@ -68,7 +69,7 @@ class TestTimestampInHeaders:
 
 class TestTimestampHidden:
     def test_no_suffix_when_hidden(self, sample_assistant_message):
-        config = RenderConfig(show_timestamps=False)
+        config = RenderConfig(filters=FilterConfig(hidden={"timestamps"}))
         msg = parse_message(sample_assistant_message)
         blocks = msg.render(config)
         header = _find_header(blocks)
@@ -78,7 +79,7 @@ class TestTimestampHidden:
 
 class TestTimestampFormat:
     def test_custom_format(self, sample_assistant_message):
-        config = RenderConfig(show_timestamps=True, timestamp_format="%H:%M")
+        config = RenderConfig(timestamp_format="%H:%M")
         msg = parse_message(sample_assistant_message)
         blocks = msg.render(config)
         header = _find_header(blocks)
@@ -89,7 +90,7 @@ class TestTimestampFormat:
 
 class TestTimestampMissing:
     def test_no_timestamp_no_suffix(self, sample_message_no_timestamp):
-        config = RenderConfig(show_timestamps=True)
+        config = RenderConfig()
         msg = parse_message(sample_message_no_timestamp)
         blocks = msg.render(config)
         header = _find_header(blocks)
@@ -99,7 +100,7 @@ class TestTimestampMissing:
 
 class TestToolResultNoTimestamp:
     def test_tool_result_no_header(self, sample_tool_result_message):
-        config = RenderConfig(show_timestamps=True, show_tool_results=True)
+        config = RenderConfig()
         msg = parse_message(sample_tool_result_message)
         blocks = msg.render(config)
         headers = [b for b in blocks if isinstance(b, HeaderBlock)]

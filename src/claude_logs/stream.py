@@ -20,12 +20,66 @@ def should_show_message(
     msg: BaseMessage, data: dict[str, Any], config: RenderConfig
 ) -> bool:
     """Determine if a message should be displayed based on filters."""
+    filters = config.filters
 
-    # Check type filter
-    if config.show_types and msg.type not in config.show_types:
+    # Check message type visibility
+    if not filters.is_visible(msg.type):
         return False
 
-    # Check timestamp filters
+    # Check subtype visibility — subtypes only block a message when
+    # they are explicitly hidden or when show_only explicitly names subtypes.
+    # If show_only only contains type-level names (e.g. "user"), subtypes
+    # (e.g. "user-input") pass through.
+    _SUBTYPE_NAMES = {
+        "user-input",
+        "tool-result",
+        "subagent-result",
+        "system-meta",
+        "local-command",
+        "init",
+        "compact-boundary",
+        "success",
+    }
+    _show_only_has_subtypes = bool(filters.show_only & _SUBTYPE_NAMES)
+
+    if isinstance(msg, UserMessage):
+        subtype = msg.get_subtype()
+        # Explicit hide (unless also explicitly shown)
+        if subtype in filters.hidden and subtype not in filters.shown:
+            return False
+        # If show_only explicitly names subtypes, enforce the whitelist
+        if _show_only_has_subtypes and subtype not in filters.show_only:
+            if subtype not in filters.shown:
+                return False
+        # Tool-result / subagent-result also require "tools" visibility
+        if subtype in ("tool-result", "subagent-result") and not filters.is_visible(
+            "tools"
+        ):
+            return False
+    else:
+        raw_subtype = getattr(msg, "subtype", "")
+        if raw_subtype:
+            normalized = raw_subtype.replace("_", "-")
+            if normalized in filters.hidden and normalized not in filters.shown:
+                return False
+            if _show_only_has_subtypes and normalized not in filters.show_only:
+                if normalized not in filters.shown:
+                    return False
+
+    # Check tool name visibility — only blocked if explicitly hidden
+    content = data.get("message", {}).get("content", [])
+    if isinstance(content, list):
+        tool_names = {
+            item.get("name")
+            for item in content
+            if isinstance(item, dict) and item.get("type") == "tool_use"
+        }
+        if tool_names:
+            for tool_name in tool_names:
+                if tool_name in filters.hidden and tool_name not in filters.shown:
+                    return False
+
+    # Timestamp filtering
     if config.before or config.after:
         ts_str = data.get("timestamp", "")
         if ts_str:
@@ -38,56 +92,13 @@ def should_show_message(
                 if config.before and msg_dt > config.before:
                     return False
             except (ValueError, OSError):
-                pass  # Can't parse timestamp — let it through
-        # Messages without timestamps pass through
+                pass
 
-    # For user messages, filter out tool-result/subagent-result when
-    # --hide-tool-results is set
-    if isinstance(msg, UserMessage) and not config.show_tool_results:
-        subtype = msg.get_subtype()
-        if subtype in ("tool-result", "subagent-result"):
-            return False
-
-    # Check subtype filter
-    if config.show_subtypes:
-        if isinstance(msg, UserMessage):
-            # User messages use computed subtypes
-            if msg.get_subtype() not in config.show_subtypes:
-                return False
-        else:
-            subtype = data.get("subtype")
-            if msg.type == "assistant":
-                content_types = set()
-                content = data.get("message", {}).get("content", [])
-                if isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict):
-                            content_types.add(item.get("type"))
-                if not config.show_subtypes.intersection(content_types):
-                    return False
-            elif subtype and subtype not in config.show_subtypes:
-                return False
-
-    # Check tool filter
-    if config.show_tools:
-        tools_in_msg = set()
-        content = data.get("message", {}).get("content", [])
-        if isinstance(content, list):
-            for item in content:
-                if isinstance(item, dict) and item.get("type") == "tool_use":
-                    tools_in_msg.add(item.get("name"))
-        if not tools_in_msg:
-            return False
-        if not config.show_tools.intersection(tools_in_msg):
-            return False
-
-    # Check grep patterns
+    # Grep/exclude
     if config.grep_patterns:
         msg_str = json.dumps(data)
         if not any(pattern in msg_str for pattern in config.grep_patterns):
             return False
-
-    # Check exclude patterns
     if config.exclude_patterns:
         msg_str = json.dumps(data)
         if any(pattern in msg_str for pattern in config.exclude_patterns):
@@ -139,7 +150,7 @@ def process_stream(
         # Add line number prefix if enabled
         blocks = msg.render(config)
 
-        if config.show_line_numbers:
+        if config.filters.is_visible("line-numbers"):
             blocks.insert(0, TextBlock(text=f"[{line_num}]", styles={Style.METADATA}))
 
         output = formatter.format(blocks)

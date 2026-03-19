@@ -85,7 +85,8 @@ class TestGroupByDirectoryMode:
                 "show",
                 "--group-by",
                 "project",
-                "--hide-timestamps",
+                "--hide",
+                "timestamps",
                 str(tmp_path),
             ],
         ):
@@ -137,7 +138,8 @@ class TestGroupByDirectoryMode:
                 "show",
                 "--group-by",
                 "time:%Y%m%d%H",
-                "--hide-timestamps",
+                "--hide",
+                "timestamps",
                 str(tmp_path),
             ],
         ):

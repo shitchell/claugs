@@ -5,7 +5,7 @@ from pathlib import Path
 
 from claude_logs.grouping import FileHandle, render_grouped
 from claude_logs.formatters import PlainFormatter
-from claude_logs.models import GroupByConfig, RenderConfig
+from claude_logs.models import FilterConfig, GroupByConfig, RenderConfig
 
 
 def _write_jsonl(path: Path, messages: list[dict]) -> Path:
@@ -47,7 +47,7 @@ class TestRenderGroupedProjectOnly:
             FileHandle(path=proj_a / "s1.jsonl", offset=0, project="proj-a"),
             FileHandle(path=proj_b / "s2.jsonl", offset=0, project="proj-b"),
         ]
-        config = RenderConfig(show_timestamps=False)
+        config = RenderConfig(filters=FilterConfig(hidden={"timestamps"}))
         group_config = GroupByConfig(by_project=True)
         formatter = PlainFormatter()
 
@@ -90,7 +90,7 @@ class TestRenderGroupedNoGrouping:
             FileHandle(path=tmp_path / "s1.jsonl", offset=0, project="proj"),
             FileHandle(path=tmp_path / "s2.jsonl", offset=0, project="proj"),
         ]
-        config = RenderConfig(show_timestamps=False)
+        config = RenderConfig(filters=FilterConfig(hidden={"timestamps"}))
         group_config = GroupByConfig()
         formatter = PlainFormatter()
 
@@ -142,7 +142,7 @@ class TestRenderGroupedTimeInterleaved:
             FileHandle(path=tmp_path / "a.jsonl", offset=0, project="proj"),
             FileHandle(path=tmp_path / "b.jsonl", offset=0, project="proj"),
         ]
-        config = RenderConfig(show_timestamps=False)
+        config = RenderConfig(filters=FilterConfig(hidden={"timestamps"}))
         group_config = GroupByConfig(time_format="%Y%m%d%H")
         formatter = PlainFormatter()
 
@@ -181,7 +181,7 @@ class TestRenderGroupedTimeInterleaved:
         handles = [
             FileHandle(path=tmp_path / "a.jsonl", offset=0, project="proj"),
         ]
-        config = RenderConfig(show_timestamps=False)
+        config = RenderConfig(filters=FilterConfig(hidden={"timestamps"}))
         group_config = GroupByConfig(time_format="%Y%m%d%H")
         formatter = PlainFormatter()
 
@@ -213,7 +213,7 @@ class TestRenderGroupedTimeInterleaved:
         handles = [
             FileHandle(path=tmp_path / "a.jsonl", offset=0, project="proj"),
         ]
-        config = RenderConfig(show_timestamps=False)
+        config = RenderConfig(filters=FilterConfig(hidden={"timestamps"}))
         group_config = GroupByConfig(time_format="%Y%m%d%H")
         formatter = PlainFormatter()
 

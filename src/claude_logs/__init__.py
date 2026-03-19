@@ -81,6 +81,7 @@ from .models import (
     Message,
     parse_message,
     # Config
+    FilterConfig,
     GroupByConfig,
     RenderConfig,
     # Constants
@@ -164,6 +165,7 @@ __all__ = [
     "SystemStyleMessage",
     "UserMessage",
     # Config and parsing
+    "FilterConfig",
     "GroupByConfig",
     "RenderConfig",
     "parse_message",
