@@ -260,8 +260,8 @@ Examples:
     %(prog)s show --show-only user,assistant             # Only user + assistant
     %(prog)s show --compact                             # Hide non-essential content
     %(prog)s show --list-filters                        # Show available filters
-    %(prog)s show --search "error" -l                   # List matching filepaths
-    %(prog)s show --search "bug" --since "yesterday" .  # Search recent sessions
+    %(prog)s show --find "error" -l                   # List matching filepaths
+    %(prog)s show --find "bug" --since "yesterday" .  # Search recent sessions
     %(prog)s show --since "today" ~/myproject            # Today's messages
     %(prog)s show --since "2h ago" . --group-by time:%%H # Interleave by hour
     %(prog)s watch ~/.claude/projects/                  # Watch all sessions
@@ -298,7 +298,7 @@ Examples:
 
     # Show-specific options
     show_parser.add_argument(
-        "--search",
+        "--find",
         dest="search_text",
         metavar="TEXT",
         help="Only files containing this text",
@@ -553,7 +553,7 @@ def handle_show(
         # Working with a specific session file
         target_files = [session_path]
 
-        # Apply --search filter if set
+        # Apply --find filter if set
         if args.search_text:
             target_files = _find_matching_files(target_files, args.search_text, config)
             if not target_files:
@@ -576,7 +576,7 @@ def handle_show(
             # Directory mode: collect all JSONL files
             jsonl_files = _collect_jsonl_files(resolved_path)
 
-            # Apply --search filter if set
+            # Apply --find filter if set
             if args.search_text:
                 jsonl_files = _find_matching_files(
                     jsonl_files, args.search_text, config
@@ -605,7 +605,7 @@ def handle_show(
 
             target_files = [resolved_path]
 
-            # Apply --search filter if set
+            # Apply --find filter if set
             if args.search_text:
                 target_files = _find_matching_files(
                     target_files, args.search_text, config
@@ -622,7 +622,7 @@ def handle_show(
                 process_stream(f, config, formatter, tail_lines=args.lines)
             return 0
 
-    # No file_path and no session_path -- check for --search without explicit source
+    # No file_path and no session_path -- check for --find without explicit source
     if args.search_text:
         search_dir = Path.home() / ".claude" / "projects"
         if not search_dir.exists():

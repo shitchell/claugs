@@ -125,7 +125,7 @@ class TestSearchWithTimeFilter:
             [
                 "claugs",
                 "show",
-                "--search",
+                "--find",
                 "needle",
                 "--after",
                 "2026-03-15",

@@ -344,7 +344,7 @@ class TestShowSearch:
                 "show",
                 "--hide",
                 "timestamps",
-                "--search",
+                "--find",
                 "README.md",
                 str(fpath),
             ],
@@ -366,7 +366,7 @@ class TestShowSearch:
                 "show",
                 "--hide",
                 "timestamps",
-                "--search",
+                "--find",
                 "xyzzy_nonexistent_text",
                 str(fpath),
             ],
@@ -386,7 +386,7 @@ class TestShowSearch:
                 "claugs",
                 "show",
                 "-l",
-                "--search",
+                "--find",
                 "README.md",
                 str(fpath),
             ],
@@ -406,7 +406,7 @@ class TestShowSearch:
                 [
                     "claugs",
                     "show",
-                    "--search",
+                    "--find",
                     "config.json",
                     "--latest",
                     "--hide",
@@ -458,7 +458,7 @@ class TestShowSearch:
                 "claugs",
                 "show",
                 "-l",
-                "--search",
+                "--find",
                 "needle",
                 "--after",
                 "2026-03-17T12:00:00Z",
@@ -504,7 +504,7 @@ class TestShowDirectoryMode:
                 "claugs",
                 "show",
                 "-l",
-                "--search",
+                "--find",
                 "project-a",
                 str(mp_dir),
             ],
@@ -610,7 +610,7 @@ class TestShowFilepathsOnly:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "-l", "--search", "project-b", str(mp_dir)],
+            ["claugs", "show", "-l", "--find", "project-b", str(mp_dir)],
         ):
             code = main()
         assert code == 0

@@ -34,7 +34,7 @@ class TestSearchFilepathMode:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--search", "needle", "-l", str(tmp_path)],
+            ["claugs", "show", "--find", "needle", "-l", str(tmp_path)],
         ):
             code = main()
         assert code == 0
@@ -57,7 +57,7 @@ class TestSearchFilepathMode:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--search", "xyznotfound", "-l", str(tmp_path)],
+            ["claugs", "show", "--find", "xyznotfound", "-l", str(tmp_path)],
         ):
             code = main()
         assert code == 0
@@ -86,7 +86,7 @@ class TestSearchRenderMode:
             [
                 "claugs",
                 "show",
-                "--search",
+                "--find",
                 "needle",
                 "--hide",
                 "timestamps",
@@ -109,7 +109,7 @@ class TestSearchComposability:
         with patch.object(
             sys,
             "argv",
-            ["claugs", "show", "--search", "text", "--session", "nonexistent-uuid"],
+            ["claugs", "show", "--find", "text", "--session", "nonexistent-uuid"],
         ):
             code = main()
         assert code != 0

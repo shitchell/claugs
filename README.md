@@ -64,17 +64,17 @@ claugs watch . -n 10
 
 ### Search
 
-`--search` is a filter on `show` that narrows to files containing the search text:
+`--find` is a filter on `show` that narrows to files containing the search text:
 
 ```bash
 # Find sessions containing "error" and render them
-claugs show --search "error"
+claugs show --find "error"
 
 # Just list matching filepaths
-claugs show --search "error" -l
+claugs show --find "error" -l
 
 # Combine with time filters
-claugs show --search "bug" --since "yesterday" ~/myproject
+claugs show --find "bug" --since "yesterday" ~/myproject
 ```
 
 ### Time Filtering
