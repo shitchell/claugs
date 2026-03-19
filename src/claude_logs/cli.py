@@ -304,7 +304,7 @@ Examples:
 
     # Positional source argument
     show_parser.add_argument(
-        "source", nargs="?", type=Path, help="JSONL filepath or directory"
+        "source", nargs="*", type=Path, help="JSONL filepaths or directories"
     )
 
     # Source options (mutually exclusive)
@@ -553,135 +553,89 @@ def handle_show(
         )
         return 1
 
-    # Resolve the source path
-    file_path = args.source or args.file
-    session_path: Path | None = None
+    # Collect all JSONL files from all sources
+    all_files: list[Path] = []
+    sources: list[Path] = []
 
-    # Resolve --session or --latest to a file path
+    # Gather sources from positional args, --file, --session, --latest
+    if args.source:
+        sources.extend(args.source)
+    if args.file:
+        sources.append(args.file)
     if args.session:
         session_path = find_session_file(session_id=args.session)
         if not session_path:
             print(f"error: session not found: {args.session}", file=sys.stderr)
             return 1
+        all_files.append(session_path)
     elif args.latest:
         session_path = find_session_file(latest=True)
         if not session_path:
             print("error: no sessions found", file=sys.stderr)
             return 1
+        all_files.append(session_path)
 
-    # --filepaths-only with stdin is an error
-    if args.filepaths_only and not file_path and not session_path:
-        if not sys.stdin.isatty():
-            print("error: --filepaths-only cannot be used with stdin", file=sys.stderr)
-            return 1
-
-    # Determine what we're working with
-    if session_path:
-        # Working with a specific session file
-        target_files = [session_path]
-
-        # Apply --find filter if set
-        if args.search_text:
-            target_files = _find_matching_files(target_files, args.search_text, config)
-            if not target_files:
-                return 0  # No match, silent exit
-
-        if args.filepaths_only:
-            for f in target_files:
-                print(f)
-            return 0
-
-        # Render the session
-        with open(target_files[0]) as f:
-            process_stream(f, config, formatter, tail_lines=args.lines)
-        return 0
-
-    if file_path:
-        resolved_path = resolve_project_path(file_path)
-
-        if resolved_path.is_dir():
-            # Directory mode: collect all JSONL files
-            jsonl_files = _collect_jsonl_files(resolved_path)
-
-            # Apply --find filter if set
-            if args.search_text:
-                jsonl_files = _find_matching_files(
-                    jsonl_files, args.search_text, config
-                )
-
-            if args.filepaths_only:
-                for jf in jsonl_files:
-                    print(jf)
-                return 0
-
-            # Render files
-            _render_files(
-                jsonl_files,
-                config,
-                formatter,
-                tail_lines=args.lines,
-                group_config=group_config,
-            )
-            return 0
-
+    # Resolve each source path → collect JSONL files
+    for source in sources:
+        resolved = resolve_project_path(source)
+        if resolved.is_dir():
+            all_files.extend(_collect_jsonl_files(resolved))
+        elif resolved.exists():
+            all_files.append(resolved)
         else:
-            # Single file mode
-            if not resolved_path.exists():
-                print(f"error: file not found: {file_path}", file=sys.stderr)
-                return 1
-
-            target_files = [resolved_path]
-
-            # Apply --find filter if set
-            if args.search_text:
-                target_files = _find_matching_files(
-                    target_files, args.search_text, config
+            print(f"error: path not found: {source}", file=sys.stderr)
+            if resolved != source.resolve():
+                print(
+                    f"  (looked for Claude project at: {resolved})",
+                    file=sys.stderr,
                 )
-                if not target_files:
-                    return 0  # No match, silent exit
-
-            if args.filepaths_only:
-                for f in target_files:
-                    print(f)
-                return 0
-
-            with open(target_files[0]) as f:
-                process_stream(f, config, formatter, tail_lines=args.lines)
-            return 0
-
-    # No file_path and no session_path -- check for --find without explicit source
-    if args.search_text:
-        search_dir = Path.home() / ".claude" / "projects"
-        if not search_dir.exists():
-            print(f"error: path not found: {search_dir}", file=sys.stderr)
             return 1
 
-        jsonl_files = _collect_jsonl_files(search_dir)
-        matching_files = _find_matching_files(jsonl_files, args.search_text, config)
-
-        if args.filepaths_only:
-            for mf in matching_files:
-                print(mf)
+    # If no sources at all, check for --find without path or stdin
+    if not all_files and not sources:
+        if args.search_text:
+            # Search all projects
+            search_dir = Path.home() / ".claude" / "projects"
+            if not search_dir.exists():
+                print(f"error: path not found: {search_dir}", file=sys.stderr)
+                return 1
+            all_files = _collect_jsonl_files(search_dir)
+        elif not sys.stdin.isatty():
+            # Stdin mode
+            if args.filepaths_only:
+                print(
+                    "error: --filepaths-only cannot be used with stdin",
+                    file=sys.stderr,
+                )
+                return 1
+            process_stream(sys.stdin, config, formatter, tail_lines=args.lines)
             return 0
+        else:
+            print("error: no input source specified", file=sys.stderr)
+            return 1
 
-        # Render matching files
-        _render_files(
-            matching_files,
-            config,
-            formatter,
-            tail_lines=args.lines,
-            group_config=group_config,
-        )
+    # Apply --find filter
+    if args.search_text:
+        all_files = _find_matching_files(all_files, args.search_text, config)
+
+    # --filepaths-only: print and exit
+    if args.filepaths_only:
+        for f in all_files:
+            print(f)
         return 0
 
-    # Try stdin
-    if not sys.stdin.isatty():
-        process_stream(sys.stdin, config, formatter, tail_lines=args.lines)
-        return 0
+    # Render
+    if not all_files:
+        return 0  # No matches, silent exit
 
-    # No input source
-    print("error: no input source specified", file=sys.stderr)
-    return 1
+    _render_files(
+        all_files,
+        config,
+        formatter,
+        tail_lines=args.lines,
+        group_config=group_config,
+    )
+    return 0
 
 
 def handle_watch(

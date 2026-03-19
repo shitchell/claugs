@@ -658,7 +658,7 @@ class TestShowErrors:
             code = main()
         assert code == 1
         err = capsys.readouterr().err
-        assert "file not found" in err.lower()
+        assert "not found" in err.lower()
 
     def test_source_and_file_conflict(self, fixtures_dir, capsys):
         """Positional source + --file gives error."""
