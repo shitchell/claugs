@@ -171,13 +171,13 @@ if WATCHDOG_AVAILABLE:
 
 
 def watch_path(
-    path: Path,
+    paths: list[Path] | Path,
     config: RenderConfig,
     formatter: Formatter,
     recursive: bool = True,
     tail_lines: int = 0,
 ) -> None:
-    """Watch a file or directory for changes."""
+    """Watch one or more files or directories for changes."""
 
     if not WATCHDOG_AVAILABLE:
         print(
@@ -185,10 +185,17 @@ def watch_path(
         )
         sys.exit(1)
 
-    watcher = FileWatcher(config, formatter, show_filename=path.is_dir())
+    # Normalize to list
+    if isinstance(paths, Path):
+        paths = [paths]
 
-    # Get all files to watch
-    initial_files = watcher.get_initial_files(path, recursive)
+    show_filename = len(paths) > 1 or any(p.is_dir() for p in paths)
+    watcher = FileWatcher(config, formatter, show_filename=show_filename)
+
+    # Get all files to watch across all paths
+    initial_files: list[Path] = []
+    for path in paths:
+        initial_files.extend(watcher.get_initial_files(path, recursive))
 
     if tail_lines <= 0:
         # Skip existing content - just seek to end of all files
@@ -202,12 +209,13 @@ def watch_path(
         ):
             watcher.process_tail_lines(file_path, tail_lines)
 
-    # Set up watchdog observer
+    # Set up watchdog observer for each path
     event_handler = JSONLEventHandler(watcher)
     observer = Observer()
 
-    watch_path_resolved = path if path.is_dir() else path.parent
-    observer.schedule(event_handler, str(watch_path_resolved), recursive=recursive)
+    for path in paths:
+        watch_dir = path if path.is_dir() else path.parent
+        observer.schedule(event_handler, str(watch_dir), recursive=recursive)
 
     print(
         f"\n{ANSIFormatter.DIM}Watching for changes... (Ctrl+C to stop){ANSIFormatter.RESET}\n",

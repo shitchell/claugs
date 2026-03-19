@@ -351,7 +351,7 @@ Examples:
         description="Watch a file or directory for new JSONL messages (like tail -f).",
     )
     watch_parser.add_argument(
-        "path", type=Path, help="JSONL filepath or directory to watch"
+        "paths", nargs="+", type=Path, help="JSONL filepaths or directories to watch"
     )
 
     args = parser.parse_args()
@@ -642,20 +642,23 @@ def handle_watch(
     args: argparse.Namespace, config: RenderConfig, formatter: Formatter
 ) -> int:
     """Handle the 'watch' subcommand."""
-    watch_target = resolve_project_path(args.path)
+    resolved_paths: list[Path] = []
 
-    if not watch_target.exists():
-        print(f"error: path not found: {args.path}", file=sys.stderr)
-        # If we tried to resolve to a Claude path, mention it
-        if watch_target != args.path.resolve():
-            print(f"  (looked for Claude project at: {watch_target})", file=sys.stderr)
-        return 1
+    for path in args.paths:
+        resolved = resolve_project_path(path)
+        if not resolved.exists():
+            print(f"error: path not found: {path}", file=sys.stderr)
+            if resolved != path.resolve():
+                print(
+                    f"  (looked for Claude project at: {resolved})",
+                    file=sys.stderr,
+                )
+            return 1
+        if resolved != path.resolve():
+            print(f"watching: {resolved}", file=sys.stderr)
+        resolved_paths.append(resolved)
 
-    # Show resolved path if different from input
-    if watch_target != args.path.resolve():
-        print(f"watching: {watch_target}", file=sys.stderr)
-
-    watch_path(watch_target, config, formatter, recursive=True, tail_lines=args.lines)
+    watch_path(resolved_paths, config, formatter, recursive=True, tail_lines=args.lines)
     return 0
 
 

@@ -960,7 +960,7 @@ class TestParseArgs:
         with patch.object(sys, "argv", ["claugs", "watch", "/some/path"]):
             _, args = parse_args()
         assert args.command == "watch"
-        assert args.path == Path("/some/path")
+        assert args.paths == [Path("/some/path")]
 
     def test_show_with_file_arg(self):
         """--file is parsed under show."""
