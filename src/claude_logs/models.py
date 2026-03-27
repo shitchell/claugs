@@ -574,9 +574,9 @@ class AgentStyleMessage(BaseMessage):
 
     def render_usage(self, config: RenderConfig) -> list[RenderBlock]:
         """Render token usage."""
-        if not config.filters.is_visible(
-            "metadata"
-        ) or not config.filters.is_visible("token-usage"):
+        if not config.filters.is_visible("metadata") or not config.filters.is_visible(
+            "token-usage"
+        ):
             return []
 
         usage = self.get_usage()
@@ -788,9 +788,11 @@ class UserMessage(BaseMessage):
 
         # Token usage
         total_tokens = self.toolUseResult.get("totalTokens", 0)
-        if total_tokens > 0 and config.filters.is_visible(
-            "metadata"
-        ) and config.filters.is_visible("token-usage"):
+        if (
+            total_tokens > 0
+            and config.filters.is_visible("metadata")
+            and config.filters.is_visible("token-usage")
+        ):
             blocks.append(
                 TextBlock(
                     text=f"Total tokens: {total_tokens}",
