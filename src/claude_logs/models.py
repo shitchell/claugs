@@ -410,7 +410,7 @@ class _MetadataFilter(ContentBlock):
 
     type: Literal["_metadata"] = "_metadata"
     _filter_name: ClassVar[str] = "metadata"
-    _filter_description: ClassVar[str] = "Message metadata (uuid, session, token usage)"
+    _filter_description: ClassVar[str] = "Message metadata (uuid, session)"
     _filter_default_visible: ClassVar[bool] = False
 
 
@@ -574,9 +574,7 @@ class AgentStyleMessage(BaseMessage):
 
     def render_usage(self, config: RenderConfig) -> list[RenderBlock]:
         """Render token usage."""
-        if not config.filters.is_visible("metadata") or not config.filters.is_visible(
-            "token-usage"
-        ):
+        if not config.filters.is_visible("token-usage"):
             return []
 
         usage = self.get_usage()
@@ -788,11 +786,7 @@ class UserMessage(BaseMessage):
 
         # Token usage
         total_tokens = self.toolUseResult.get("totalTokens", 0)
-        if (
-            total_tokens > 0
-            and config.filters.is_visible("metadata")
-            and config.filters.is_visible("token-usage")
-        ):
+        if total_tokens > 0 and config.filters.is_visible("token-usage"):
             blocks.append(
                 TextBlock(
                     text=f"Total tokens: {total_tokens}",
@@ -1037,16 +1031,17 @@ class ResultMessage(BaseMessage):
             KeyValueBlock(key="Cost", value=f"${self.total_cost_usd:.4f}", indent=1)
         )
 
-        in_tokens = self.usage.get("input_tokens", 0)
-        out_tokens = self.usage.get("output_tokens", 0)
-        cache_read = self.usage.get("cache_read_input_tokens", 0)
-        blocks.append(
-            KeyValueBlock(
-                key="Tokens",
-                value=f"in={in_tokens} out={out_tokens} cache={cache_read}",
-                indent=1,
+        if config.filters.is_visible("token-usage"):
+            in_tokens = self.usage.get("input_tokens", 0)
+            out_tokens = self.usage.get("output_tokens", 0)
+            cache_read = self.usage.get("cache_read_input_tokens", 0)
+            blocks.append(
+                KeyValueBlock(
+                    key="Tokens",
+                    value=f"in={in_tokens} out={out_tokens} cache={cache_read}",
+                    indent=1,
+                )
             )
-        )
 
         blocks.extend(self.render_metadata(config))
         blocks.append(SpacerBlock())
