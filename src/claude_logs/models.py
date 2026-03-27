@@ -410,7 +410,16 @@ class _MetadataFilter(ContentBlock):
 
     type: Literal["_metadata"] = "_metadata"
     _filter_name: ClassVar[str] = "metadata"
-    _filter_description: ClassVar[str] = "Message metadata (uuid, session)"
+    _filter_description: ClassVar[str] = "Message metadata (uuid, session, token usage)"
+    _filter_default_visible: ClassVar[bool] = False
+
+
+class _TokenUsageFilter(ContentBlock):
+    """Sentinel for the token-usage display filter."""
+
+    type: Literal["_token_usage"] = "_token_usage"
+    _filter_name: ClassVar[str] = "token-usage"
+    _filter_description: ClassVar[str] = "Token usage summaries"
     _filter_default_visible: ClassVar[bool] = False
 
 
@@ -565,6 +574,11 @@ class AgentStyleMessage(BaseMessage):
 
     def render_usage(self, config: RenderConfig) -> list[RenderBlock]:
         """Render token usage."""
+        if not config.filters.is_visible(
+            "metadata"
+        ) or not config.filters.is_visible("token-usage"):
+            return []
+
         usage = self.get_usage()
         in_tokens = usage.get("input_tokens", 0)
         out_tokens = usage.get("output_tokens", 0)
@@ -774,7 +788,9 @@ class UserMessage(BaseMessage):
 
         # Token usage
         total_tokens = self.toolUseResult.get("totalTokens", 0)
-        if total_tokens > 0:
+        if total_tokens > 0 and config.filters.is_visible(
+            "metadata"
+        ) and config.filters.is_visible("token-usage"):
             blocks.append(
                 TextBlock(
                     text=f"Total tokens: {total_tokens}",
