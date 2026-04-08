@@ -1,2 +1,8 @@
 __pycache__/
 dist/
+
+# Project Manager worker state (runtime audit trail, per-environment).
+# Any project that hosts a claude-worker --pm worker accumulates this
+# directory. Contents are per-environment runtime logs, potentially
+# sensitive, and not something that should travel in git.
+.claude-worker-pm/
