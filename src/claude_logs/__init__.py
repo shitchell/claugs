@@ -100,6 +100,15 @@ from .stream import (
     should_show_message,
 )
 
+# Token usage statistics
+from .token_stats import (
+    ContextWindowUsage,
+    TokenStats,
+    TokenStatsFilter,
+    compute_context_window_usage,
+    compute_token_stats,
+)
+
 # File watching
 from .watcher import (
     FileWatcher,
@@ -183,6 +192,12 @@ __all__ = [
     # Stream processing
     "process_stream",
     "should_show_message",
+    # Token usage stats
+    "ContextWindowUsage",
+    "TokenStats",
+    "TokenStatsFilter",
+    "compute_context_window_usage",
+    "compute_token_stats",
     # Watcher
     "FileWatcher",
     "WATCHDOG_AVAILABLE",
