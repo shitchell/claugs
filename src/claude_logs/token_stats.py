@@ -409,9 +409,7 @@ def compute_context_window_usage(
         cache_creation_input_tokens=int(
             last_usage.get("cache_creation_input_tokens", 0) or 0
         ),
-        cache_read_input_tokens=int(
-            last_usage.get("cache_read_input_tokens", 0) or 0
-        ),
+        cache_read_input_tokens=int(last_usage.get("cache_read_input_tokens", 0) or 0),
         output_tokens=int(last_usage.get("output_tokens", 0) or 0),
         source_uuid=last_uuid,
         source_message_id=last_message_id,

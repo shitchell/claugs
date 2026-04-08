@@ -194,9 +194,7 @@ class TestTypeFilter:
         assert stats.messages_considered == 1
 
     def test_empty_types_means_all_types(self):
-        stats = compute_token_stats(
-            FIXTURE_V177, TokenStatsFilter(types=frozenset())
-        )
+        stats = compute_token_stats(FIXTURE_V177, TokenStatsFilter(types=frozenset()))
         # Sums assistants AND result (expected double-count; documented).
         assert stats.input_tokens == 2645 + 2800
         assert stats.output_tokens == 273 + 450
@@ -456,14 +454,24 @@ class TestContextWindowUsage:
             tmp_path,
             [
                 self._asst(
-                    "a-1", "m1",
-                    {"input_tokens": 100, "cache_read_input_tokens": 50,
-                     "cache_creation_input_tokens": 0, "output_tokens": 10},
+                    "a-1",
+                    "m1",
+                    {
+                        "input_tokens": 100,
+                        "cache_read_input_tokens": 50,
+                        "cache_creation_input_tokens": 0,
+                        "output_tokens": 10,
+                    },
                 ),
                 self._asst(
-                    "a-2", "m2",
-                    {"input_tokens": 200, "cache_read_input_tokens": 9000,
-                     "cache_creation_input_tokens": 300, "output_tokens": 5},
+                    "a-2",
+                    "m2",
+                    {
+                        "input_tokens": 200,
+                        "cache_read_input_tokens": 9000,
+                        "cache_creation_input_tokens": 300,
+                        "output_tokens": 5,
+                    },
                 ),
                 {
                     "type": "result",
@@ -498,14 +506,24 @@ class TestContextWindowUsage:
             tmp_path,
             [
                 self._asst(
-                    "main-1", "m_main",
-                    {"input_tokens": 11, "cache_read_input_tokens": 22,
-                     "cache_creation_input_tokens": 33, "output_tokens": 4},
+                    "main-1",
+                    "m_main",
+                    {
+                        "input_tokens": 11,
+                        "cache_read_input_tokens": 22,
+                        "cache_creation_input_tokens": 33,
+                        "output_tokens": 4,
+                    },
                 ),
                 self._asst(
-                    "sub-1", "m_sub",
-                    {"input_tokens": 7777, "cache_read_input_tokens": 8888,
-                     "cache_creation_input_tokens": 9999, "output_tokens": 1},
+                    "sub-1",
+                    "m_sub",
+                    {
+                        "input_tokens": 7777,
+                        "cache_read_input_tokens": 8888,
+                        "cache_creation_input_tokens": 9999,
+                        "output_tokens": 1,
+                    },
                     sidechain=True,
                 ),
             ],
@@ -538,7 +556,8 @@ class TestContextWindowUsage:
             tmp_path,
             [
                 self._asst(
-                    "sub-1", "m1",
+                    "sub-1",
+                    "m1",
                     {"input_tokens": 1, "output_tokens": 1},
                     sidechain=True,
                 )
@@ -556,7 +575,8 @@ class TestContextWindowUsage:
             tmp_path,
             [
                 self._asst(
-                    "a-1", "m1",
+                    "a-1",
+                    "m1",
                     {"input_tokens": 42, "output_tokens": 7},
                 )
             ],
@@ -574,9 +594,14 @@ class TestContextWindowUsage:
             tmp_path,
             [
                 self._asst(
-                    "a-1", "m1",
-                    {"input_tokens": 1, "cache_creation_input_tokens": 2,
-                     "cache_read_input_tokens": 3, "output_tokens": 999},
+                    "a-1",
+                    "m1",
+                    {
+                        "input_tokens": 1,
+                        "cache_creation_input_tokens": 2,
+                        "cache_read_input_tokens": 3,
+                        "output_tokens": 999,
+                    },
                 )
             ],
         )
