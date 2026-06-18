@@ -43,8 +43,16 @@ def should_show_message(
     """Determine if a message should be displayed based on filters."""
     filters = config.filters
 
-    # Check message type visibility
-    if not filters.is_visible(msg.type):
+    # Check message type visibility.
+    # A subtype named in show_only (e.g. "user-input") implies its parent
+    # type ("user") passes the type gate — without this, is_visible(msg.type)
+    # rejects the message before the subtype whitelist below ever runs, so
+    # --show-only <subtype> alone would match nothing.
+    own_subtypes = set(getattr(type(msg), "_known_subtypes", {}).keys())
+    rescued_by_subtype = (
+        bool(filters.show_only & own_subtypes) and msg.type not in filters.hidden
+    )
+    if not filters.is_visible(msg.type) and not rescued_by_subtype:
         return False
 
     # Check subtype visibility — subtypes only block a message when

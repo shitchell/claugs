@@ -106,7 +106,15 @@ class TestShowHideFlags:
     def test_hide_message_type_system(self, capsys):
         """--hide system suppresses system init messages."""
         code, out = _run(
-            ["claugs", "show", "--hide", "system", "--hide", "timestamps", str(FIXTURE)],
+            [
+                "claugs",
+                "show",
+                "--hide",
+                "system",
+                "--hide",
+                "timestamps",
+                str(FIXTURE),
+            ],
             capsys,
         )
         assert code == 0
@@ -115,7 +123,15 @@ class TestShowHideFlags:
     def test_hide_message_type_result(self, capsys):
         """--hide result suppresses the SESSION COMPLETE block."""
         code, out = _run(
-            ["claugs", "show", "--hide", "result", "--hide", "timestamps", str(FIXTURE)],
+            [
+                "claugs",
+                "show",
+                "--hide",
+                "result",
+                "--hide",
+                "timestamps",
+                str(FIXTURE),
+            ],
             capsys,
         )
         assert code == 0
@@ -154,7 +170,15 @@ class TestShowHideFlags:
     def test_comma_separated_hide(self, capsys):
         """--hide thinking,tools hides both in one flag invocation."""
         code, out = _run(
-            ["claugs", "show", "--hide", "thinking,tools", "--hide", "timestamps", str(FIXTURE)],
+            [
+                "claugs",
+                "show",
+                "--hide",
+                "thinking,tools",
+                "--hide",
+                "timestamps",
+                str(FIXTURE),
+            ],
             capsys,
         )
         assert code == 0
@@ -393,7 +417,8 @@ class TestCompactFlag:
     def test_compact_with_show_override_timestamps(self, capsys):
         """--compact --show timestamps restores timestamp display."""
         code, out = _run(
-            ["claugs", "show", "--compact", "--show", "timestamps", str(FIXTURE)], capsys
+            ["claugs", "show", "--compact", "--show", "timestamps", str(FIXTURE)],
+            capsys,
         )
         assert code == 0
         assert "\u00b7" in out
@@ -761,6 +786,158 @@ class TestSystemMetaRename:
         assert code == 0
         assert "visible regular" in out
         assert "hidden meta" not in out
+
+    def test_show_only_subtype_alone_implies_parent_type(self, tmp_path, capsys):
+        """--show-only user-input works without naming the parent type 'user'.
+
+        A subtype named in show_only implies its parent type passes the
+        is_visible() type gate; the subtype whitelist then narrows to just
+        human-typed messages (isMeta=True / system-meta is excluded).
+        """
+        session_id = "sysmeta-test-007"
+        meta_msg = self._make_meta_message(session_id, "m-006", "hidden meta")
+        regular_msg = self._make_regular_user_message(
+            session_id, "u-006", "visible regular"
+        )
+        session_file = create_session_file(
+            tmp_path, session_id, [meta_msg, regular_msg]
+        )
+
+        code, out = _run(
+            [
+                "claugs",
+                "show",
+                "--show-only",
+                "user-input",
+                "--hide",
+                "timestamps",
+                str(session_file),
+            ],
+            capsys,
+        )
+        assert code == 0
+        assert "visible regular" in out
+        assert "hidden meta" not in out
+
+    def _make_interrupt_message(self, session_id: str, uuid: str) -> dict:
+        # Claude Code injects interrupts as type:user with LIST content,
+        # not a typed string — they must not count as human input.
+        return {
+            "type": "user",
+            "uuid": uuid,
+            "sessionId": session_id,
+            "timestamp": "2026-03-17T10:00:15.000Z",
+            "userType": "external",
+            "message": {
+                "role": "user",
+                "content": [{"type": "text", "text": "[Request interrupted by user]"}],
+            },
+        }
+
+    def test_interrupt_marker_excluded_from_user_input(self, tmp_path, capsys):
+        """[Request interrupted by user] markers are not human-typed input.
+
+        They arrive as type:user with list content, so without explicit
+        handling they fall through get_subtype() to 'user-input' and pollute
+        --show-only user-input. They should be classified separately.
+        """
+        session_id = "interrupt-test-001"
+        interrupt = self._make_interrupt_message(session_id, "i-001")
+        regular_msg = self._make_regular_user_message(
+            session_id, "u-007", "visible regular"
+        )
+        session_file = create_session_file(
+            tmp_path, session_id, [interrupt, regular_msg]
+        )
+
+        code, out = _run(
+            [
+                "claugs",
+                "show",
+                "--show-only",
+                "user-input",
+                "--hide",
+                "timestamps",
+                str(session_file),
+            ],
+            capsys,
+        )
+        assert code == 0
+        assert "visible regular" in out
+        assert "Request interrupted by user" not in out
+
+    def _make_task_notification(self, session_id: str, uuid: str) -> dict:
+        # Harness-injected background-task/agent completion notice — string
+        # content wrapped in <task-notification>, NOT typed by the human.
+        return {
+            "type": "user",
+            "uuid": uuid,
+            "sessionId": session_id,
+            "timestamp": "2026-03-17T10:00:20.000Z",
+            "userType": "external",
+            "message": {
+                "role": "user",
+                "content": (
+                    "<task-notification>\n<task-id>abc123</task-id>\n"
+                    "<tool-use-id>toolu_x</tool-use-id>\n</task-notification>"
+                ),
+            },
+        }
+
+    def test_task_notification_excluded_from_user_input(self, tmp_path, capsys):
+        """<task-notification> messages are harness-injected, not human input.
+
+        They arrive as type:user with string content starting with
+        '<task-notification>' (no toolUseResult, isMeta=False), so without
+        explicit handling they fall through to 'user-input'.
+        """
+        session_id = "tasknotif-test-001"
+        notif = self._make_task_notification(session_id, "t-001")
+        regular_msg = self._make_regular_user_message(
+            session_id, "u-008", "visible regular"
+        )
+        session_file = create_session_file(tmp_path, session_id, [notif, regular_msg])
+
+        code, out = _run(
+            [
+                "claugs",
+                "show",
+                "--show-only",
+                "user-input",
+                "--hide",
+                "timestamps",
+                str(session_file),
+            ],
+            capsys,
+        )
+        assert code == 0
+        assert "visible regular" in out
+        assert "task-notification" not in out
+
+    def test_task_notification_visible_via_its_subtype(self, tmp_path, capsys):
+        """--show-only task-notification surfaces only the notification."""
+        session_id = "tasknotif-test-002"
+        notif = self._make_task_notification(session_id, "t-002")
+        regular_msg = self._make_regular_user_message(
+            session_id, "u-009", "regular hidden"
+        )
+        session_file = create_session_file(tmp_path, session_id, [notif, regular_msg])
+
+        code, out = _run(
+            [
+                "claugs",
+                "show",
+                "--show-only",
+                "task-notification",
+                "--hide",
+                "timestamps",
+                str(session_file),
+            ],
+            capsys,
+        )
+        assert code == 0
+        assert "task-id" in out
+        assert "regular hidden" not in out
 
     def test_system_meta_label_in_header(self, tmp_path, capsys):
         """isMeta messages render with USER [meta] label by default."""

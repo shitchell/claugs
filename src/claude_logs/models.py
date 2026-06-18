@@ -658,7 +658,13 @@ class UserMessage(BaseMessage):
         "subagent-result": ("Sub-agent output messages", True),
         "system-meta": ("System-injected meta messages", True),
         "local-command": ("Local slash command messages", True),
+        "interrupt": ("User interrupt markers", True),
+        "task-notification": ("Background-task/agent completion notices", True),
     }
+
+    # Harness-injected string-content wrappers that are NOT human-typed input.
+    # The format keeps evolving — add new wrapper tags here as they appear.
+    _INJECTED_STRING_PREFIXES: ClassVar[tuple[str, ...]] = ("<task-notification>",)
 
     def is_subagent_result(self) -> bool:
         """Check if this is a sub-agent result."""
@@ -683,6 +689,30 @@ class UserMessage(BaseMessage):
             or content.startswith("<local-command-stdout>")
         )
 
+    def is_interrupt(self) -> bool:
+        """Check if this is a Claude Code interrupt marker (not human-typed).
+
+        Interrupts arrive as type:user with LIST content whose text starts
+        with '[Request interrupted by user' — not a typed string.
+        """
+        content = self.message.get("content", "")
+        if not isinstance(content, list):
+            return False
+        return any(
+            isinstance(block, dict)
+            and block.get("type") == "text"
+            and isinstance(block.get("text"), str)
+            and block["text"].lstrip().startswith("[Request interrupted by user")
+            for block in content
+        )
+
+    def is_task_notification(self) -> bool:
+        """Check if this is a harness-injected task/agent completion notice."""
+        content = self.message.get("content", "")
+        return isinstance(content, str) and content.lstrip().startswith(
+            self._INJECTED_STRING_PREFIXES
+        )
+
     def get_subtype(self) -> str:
         """Return the subtype of this user message."""
         if self.is_subagent_result():
@@ -693,6 +723,10 @@ class UserMessage(BaseMessage):
             return "system-meta"
         elif self.is_local_command():
             return "local-command"
+        elif self.is_interrupt():
+            return "interrupt"
+        elif self.is_task_notification():
+            return "task-notification"
         else:
             return "user-input"
 
