@@ -1162,6 +1162,225 @@ class LastPromptMessage(BaseMessage):
 
 
 # =============================================================================
+# Message Models - Session State / Metadata Markers
+# =============================================================================
+# These are lightweight, recurring state-tracking records the harness writes
+# to the JSONL alongside the conversation. They carry no conversational
+# content, so they are hidden by default (like metadata/progress/last-prompt)
+# but render a one-line summary when explicitly shown.
+
+
+class ModeMessage(BaseMessage):
+    """Session mode marker (e.g. 'normal', 'plan')."""
+
+    type: Literal["mode"] = "mode"
+    mode: str = ""
+
+    _filter_description: ClassVar[str] = "Session mode markers"
+    _filter_default_visible: ClassVar[bool] = False
+
+    def render(self, config: RenderConfig) -> list[RenderBlock]:
+        return [
+            HeaderBlock(
+                text=f"Mode: {self.mode}",
+                icon="⚙",
+                level=3,
+                styles={Style.METADATA},
+                suffix=self.format_timestamp_suffix(config),
+            ),
+            SpacerBlock(),
+        ]
+
+
+class PermissionModeMessage(BaseMessage):
+    """Permission mode marker (e.g. 'default', 'bypassPermissions')."""
+
+    type: Literal["permission-mode"] = "permission-mode"
+    permissionMode: str = ""
+
+    _filter_description: ClassVar[str] = "Permission mode markers"
+    _filter_default_visible: ClassVar[bool] = False
+
+    def render(self, config: RenderConfig) -> list[RenderBlock]:
+        return [
+            HeaderBlock(
+                text=f"Permission Mode: {self.permissionMode}",
+                icon="⚙",
+                level=3,
+                styles={Style.METADATA},
+                suffix=self.format_timestamp_suffix(config),
+            ),
+            SpacerBlock(),
+        ]
+
+
+class AiTitleMessage(BaseMessage):
+    """AI-generated session title record."""
+
+    type: Literal["ai-title"] = "ai-title"
+    aiTitle: str = ""
+
+    _filter_description: ClassVar[str] = "AI-generated session titles"
+    _filter_default_visible: ClassVar[bool] = False
+
+    def render(self, config: RenderConfig) -> list[RenderBlock]:
+        return [
+            HeaderBlock(
+                text=f"AI Title: {self.aiTitle}",
+                icon="🏷",
+                level=3,
+                styles={Style.INFO},
+                suffix=self.format_timestamp_suffix(config),
+            ),
+            SpacerBlock(),
+        ]
+
+
+class BridgeSessionMessage(BaseMessage):
+    """Bridge-session linkage marker (web/cloud session bridging)."""
+
+    type: Literal["bridge-session"] = "bridge-session"
+    bridgeSessionId: str = ""
+    lastSequenceNum: int = 0
+
+    _filter_description: ClassVar[str] = "Bridge-session linkage markers"
+    _filter_default_visible: ClassVar[bool] = False
+
+    def render(self, config: RenderConfig) -> list[RenderBlock]:
+        blocks: list[RenderBlock] = [
+            HeaderBlock(
+                text=f"Bridge Session: {self.bridgeSessionId}",
+                icon="🔗",
+                level=3,
+                styles={Style.METADATA},
+                suffix=self.format_timestamp_suffix(config),
+            )
+        ]
+        blocks.extend(self.render_metadata(config))
+        blocks.append(SpacerBlock())
+        return blocks
+
+
+class ForkContextRefMessage(BaseMessage):
+    """Fork-context reference — links a sub-agent to its parent session."""
+
+    type: Literal["fork-context-ref"] = "fork-context-ref"
+    agentId: str = ""
+    parentSessionId: str = ""
+    parentLastUuid: str = ""
+    contextLength: int = 0
+
+    _filter_description: ClassVar[str] = "Sub-agent fork-context references"
+    _filter_default_visible: ClassVar[bool] = False
+
+    def render(self, config: RenderConfig) -> list[RenderBlock]:
+        blocks: list[RenderBlock] = [
+            HeaderBlock(
+                text=f"Fork Context (agent {self.agentId})",
+                icon="🍴",
+                level=3,
+                styles={Style.METADATA},
+                suffix=self.format_timestamp_suffix(config),
+            )
+        ]
+        if self.parentSessionId:
+            blocks.append(
+                KeyValueBlock(key="parent", value=self.parentSessionId, indent=1)
+            )
+        if self.contextLength:
+            blocks.append(
+                KeyValueBlock(
+                    key="context length", value=str(self.contextLength), indent=1
+                )
+            )
+        blocks.append(SpacerBlock())
+        return blocks
+
+
+class AttachmentMessage(BaseMessage):
+    """Harness attachment record (hook output, reminders, listings, etc.).
+
+    The meaningful kind lives in the nested ``attachment.type`` field; it is
+    exposed as ``subtype`` (kebab-cased) so the shared subtype-filter
+    machinery in stream.py can target individual attachment kinds.
+    """
+
+    type: Literal["attachment"] = "attachment"
+    attachment: dict[str, Any] = Field(default_factory=dict)
+
+    _filter_description: ClassVar[str] = "Harness attachments (hooks, reminders)"
+    _filter_default_visible: ClassVar[bool] = False
+    # Known nested attachment kinds (kebab-cased). The format keeps evolving —
+    # add new kinds here as they appear. Unknown kinds still render fine.
+    _known_subtypes: ClassVar[dict[str, tuple[str, bool]]] = {
+        "task-reminder": ("Todo/task reminder injections", True),
+        "skill-listing": ("Available-skill listings", True),
+        "deferred-tools-delta": ("Deferred-tool availability deltas", True),
+        "hook-success": ("Successful hook output", True),
+        "hook-additional-context": ("Hook-injected additional context", True),
+        "queued-command": ("Queued slash commands", True),
+        "edited-text-file": ("Edited-file snapshots", True),
+        "agent-listing-delta": ("Available-agent listing deltas", True),
+        "command-permissions": ("Command permission grants", True),
+        "date-change": ("Date-change markers", True),
+        "nested-memory": ("Nested CLAUDE.md/memory injections", True),
+        "ultrathink-effort": ("Ultrathink effort markers", True),
+        "dynamic-skill": ("Dynamically loaded skills", True),
+        "plan-mode": ("Plan-mode reminders", True),
+        "plan-mode-exit": ("Plan-mode exit markers", True),
+    }
+
+    @property
+    def subtype(self) -> str:
+        """Nested attachment kind, kebab-cased for filter matching."""
+        raw = self.attachment.get("type", "") if self.attachment else ""
+        return raw.replace("_", "-")
+
+    def render(self, config: RenderConfig) -> list[RenderBlock]:
+        kind = self.attachment.get("type", "unknown") if self.attachment else "unknown"
+
+        blocks: list[RenderBlock] = [
+            HeaderBlock(
+                text=f"Attachment ({kind})",
+                icon="📎",
+                level=3,
+                styles={Style.SYSTEM},
+                suffix=self.format_timestamp_suffix(config),
+            )
+        ]
+
+        att = self.attachment or {}
+
+        # Prefer a human-readable text field if present.
+        text = att.get("content") or att.get("stdout") or ""
+        if isinstance(text, str) and text.strip():
+            lines = text.split("\n")
+            for line in lines[:TOOL_RESULT_PREVIEW_LINES]:
+                blocks.append(TextBlock(text=line, indent=1))
+            if len(lines) > TOOL_RESULT_PREVIEW_LINES:
+                blocks.append(
+                    TextBlock(
+                        text=f"... ({len(lines)} lines total)",
+                        indent=1,
+                        styles={Style.METADATA},
+                    )
+                )
+        else:
+            # No prose content — show a compact key=value summary.
+            for key, value in att.items():
+                if key == "type":
+                    continue
+                value_str = str(value)
+                if len(value_str) > TOOL_INPUT_TRUNCATE_LENGTH:
+                    value_str = value_str[:TOOL_INPUT_TRUNCATE_LENGTH] + "..."
+                blocks.append(KeyValueBlock(key=key, value=value_str, indent=1))
+
+        blocks.extend(self.render_metadata(config))
+        blocks.append(SpacerBlock())
+        return blocks
+
+
+# =============================================================================
 # Filter Registry (lazy scan of model subclasses)
 # =============================================================================
 
@@ -1242,6 +1461,12 @@ Message = Annotated[
         ResultMessage,
         ProgressMessage,
         LastPromptMessage,
+        ModeMessage,
+        PermissionModeMessage,
+        AiTitleMessage,
+        BridgeSessionMessage,
+        ForkContextRefMessage,
+        AttachmentMessage,
     ],
     Field(discriminator="type"),
 ]
