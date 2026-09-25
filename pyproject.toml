@@ -46,7 +46,10 @@ claugs = "claude_logs.cli:main"
 packages = ["src/claude_logs"]
 
 [tool.pytest.ini_options]
-pythonpath = ["tests"]
+# "src" must come first: without it, `python -m pytest` imports an
+# installed claugs from site-packages instead of the working tree, so
+# the suite silently validates the released wheel rather than your edits.
+pythonpath = ["src", "tests"]
 
 [project.urls]
 Homepage = "https://github.com/shitchell/claugs"
