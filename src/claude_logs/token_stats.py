@@ -332,7 +332,9 @@ def compute_context_window_usage(
     """Return the live context window footprint for a session.
 
     Walks the JSONL once and returns the ``usage`` snapshot from the
-    most recent non-sidechain assistant message. The resulting
+    most recent non-sidechain assistant message, falling back to the
+    most recent sidechain one if the file has no main thread at all
+    (i.e. it is a sub-agent's own transcript). The resulting
     :attr:`ContextWindowUsage.total` mirrors the number Claude Code
     displays in its UI status line — i.e. how full the model's
     context window currently is, ready to be divided by
@@ -343,12 +345,19 @@ def compute_context_window_usage(
 
     Returns:
         A :class:`ContextWindowUsage` snapshot, or ``None`` if the
-        file contains no non-sidechain assistant messages.
+        file contains no assistant messages with usage. If it contains
+        only sidechain ones (a sub-agent transcript), the last of those.
 
     Why "non-sidechain": sidechain assistant messages are sub-agent
     (Task) calls. Their ``usage`` reflects the sub-agent's private
     context, not the main thread, so they would give a misleading
     picture of "what the main model is currently holding".
+
+    Why the fallback: a sub-agent's *own* JSONL (under
+    ``<session>/subagents/agent-*.jsonl``) is entirely sidechain, so
+    it has no main thread to measure. There the sidechain *is* the
+    context being measured, and skipping it would return ``None`` for
+    every sub-agent transcript.
 
     .. note::
        **Live-streaming caveat.** When a session is *currently*
@@ -369,10 +378,12 @@ def compute_context_window_usage(
     """
     path = Path(path)
 
-    last_usage: dict[str, Any] | None = None
-    last_uuid = ""
-    last_message_id = ""
-    last_line = 0
+    # Main-thread snapshot wins. A transcript that is *entirely*
+    # sidechain (a sub-agent's own JSONL under ``<session>/subagents/``)
+    # has no main thread, so fall back to its last sidechain turn --
+    # there the sidechain IS the context being measured.
+    main: tuple[dict[str, Any], str, str, int] | None = None
+    side: tuple[dict[str, Any], str, str, int] | None = None
 
     with path.open("r", encoding="utf-8") as f:
         for line_num, raw in enumerate(f, start=1):
@@ -387,22 +398,26 @@ def compute_context_window_usage(
             msg = parse_message(data)
             if not isinstance(msg, AssistantMessage):
                 continue
-            if msg.isSidechain:
-                continue
 
             usage = _usage_for(msg)
             if not usage:
                 continue
 
-            last_usage = usage
-            last_uuid = msg.uuid or ""
-            last_message_id = (
-                msg.message.get("id", "") if isinstance(msg.message, dict) else ""
+            snap = (
+                usage,
+                msg.uuid or "",
+                msg.message.get("id", "") if isinstance(msg.message, dict) else "",
+                line_num,
             )
-            last_line = line_num
+            if msg.isSidechain:
+                side = snap
+            else:
+                main = snap
 
-    if last_usage is None:
+    chosen = main if main is not None else side
+    if chosen is None:
         return None
+    last_usage, last_uuid, last_message_id, last_line = chosen
 
     return ContextWindowUsage(
         input_tokens=int(last_usage.get("input_tokens", 0) or 0),

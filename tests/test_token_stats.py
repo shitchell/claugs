@@ -551,19 +551,80 @@ class TestContextWindowUsage:
         )
         assert compute_context_window_usage(path) is None
 
-    def test_returns_none_when_only_sidechain_assistants(self, tmp_path):
+    def test_all_sidechain_transcript_falls_back_to_sidechain(self, tmp_path):
+        # A sub-agent's own JSONL (<session>/subagents/agent-*.jsonl) is
+        # 100% sidechain. There the sidechain IS the context being
+        # measured, so we must not return None. See issue #2.
         path = self._write(
             tmp_path,
             [
                 self._asst(
                     "sub-1",
                     "m1",
-                    {"input_tokens": 1, "output_tokens": 1},
+                    {
+                        "input_tokens": 3,
+                        "cache_read_input_tokens": 40,
+                        "cache_creation_input_tokens": 500,
+                        "output_tokens": 6,
+                    },
                     sidechain=True,
-                )
+                ),
+                self._asst(
+                    "sub-2",
+                    "m2",
+                    {
+                        "input_tokens": 5,
+                        "cache_read_input_tokens": 90000,
+                        "cache_creation_input_tokens": 700,
+                        "output_tokens": 8,
+                    },
+                    sidechain=True,
+                ),
             ],
         )
-        assert compute_context_window_usage(path) is None
+        cw = compute_context_window_usage(path)
+        assert cw is not None
+        assert cw.source_uuid == "sub-2"
+        assert cw.source_message_id == "m2"
+        assert cw.source_line == 2
+        assert cw.total == 5 + 700 + 90000
+
+    def test_main_thread_wins_over_later_sidechain(self, tmp_path):
+        # Mixed file: a main-thread turn followed by *two* sidechain
+        # turns. The main-thread snapshot must still win, even though the
+        # sidechain fallback now exists.
+        path = self._write(
+            tmp_path,
+            [
+                self._asst(
+                    "main-1",
+                    "m_main",
+                    {
+                        "input_tokens": 10,
+                        "cache_read_input_tokens": 20,
+                        "cache_creation_input_tokens": 30,
+                        "output_tokens": 1,
+                    },
+                ),
+                self._asst(
+                    "sub-1",
+                    "m_sub1",
+                    {"input_tokens": 7777, "output_tokens": 1},
+                    sidechain=True,
+                ),
+                self._asst(
+                    "sub-2",
+                    "m_sub2",
+                    {"input_tokens": 8888, "output_tokens": 1},
+                    sidechain=True,
+                ),
+            ],
+        )
+        cw = compute_context_window_usage(path)
+        assert cw is not None
+        assert cw.source_uuid == "main-1"
+        assert cw.source_line == 1
+        assert cw.total == 10 + 20 + 30
 
     def test_returns_none_for_empty_file(self, tmp_path):
         f = tmp_path / "empty.jsonl"
